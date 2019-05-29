@@ -12,7 +12,7 @@ setup(name='AdvancedAnalytics',
       version='1.0', 
       author='Edward R Jones', 
       author_email='ejones@tamu.edu', 
-      url='http://bookwebsite.org', 
+      url='http://github.com/tandonneur/AdvancedAnalytics/', 
       long_description=desc, 
       py_modules=['Calculate', 'DecisionTree', 'linreg', 'logreg', 
                   'NeuralNetwork', 'News', 'Sentiment', 'TextAnalytics'],)
