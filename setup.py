@@ -1,18 +1,21 @@
-from distutils.core import setup
-desc= """\
-AdvancedAnalytics Package
-==========================
-This package is used in conjunction with the book:
-    'The Art and Science of Data Analytics'.
-It provides easy to use functions for reporting and producing results for
-many standard machine learning models.
-"""
+import setuptools
 
-setup(name='AdvancedAnalytics', 
-      version='1.0', 
-      author='Edward R Jones', 
-      author_email='ejones@tamu.edu', 
-      url='http://github.com/tandonneur/AdvancedAnalytics/', 
-      long_description=desc, 
-      py_modules=['Calculate', 'DecisionTree', 'linreg', 'logreg', 
-                  'NeuralNetwork', 'News', 'Sentiment', 'TextAnalytics'],)
+with open("README.md", "r") as f:
+    long_description = f.read()
+
+setuptools.setup(
+        name="AdvancedAnalytics", 
+        version="0.0.5", 
+        author="Edward R Jones", 
+        author_email="ejones@tamu.edu", 
+        url="http://github.com/tandonneur/AdvancedAnalytics", 
+        description="Python support for 'The Art and Science of Data Analytics'",
+        long_description=long_description,
+        long_description_content_type="text/markdown",
+        packages=setuptools.find_packages(),
+        classifiers=[
+                "Programming Language :: Python :: 3",
+                "License :: OSI Approved :: MIT License",
+                "Operating System :: OS Independent",
+        ],
+)

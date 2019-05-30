@@ -1,0 +1,34 @@
+{% set name = "AdvancedAnalytics" %}
+{% set version = "0.0.5" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4735388ffb9e1ae6697eaec4fc327e7997a5b30b4137baa2a3d835146cc77c45
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+about:
+  home: http://github.com/tandonneur/AdvancedAnalytics
+  license: MIT
+  license_family: MIT
+  license_file: 
+  summary: Python support for 'The Art and Science of Data Analytics'
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - your-github-id-here

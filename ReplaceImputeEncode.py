@@ -5,6 +5,7 @@ Created on Tue May 28 10:15:05 2019
 
 @author: EJones
 """
+    
 import sys
 import warnings
 import pandas as pd
@@ -13,23 +14,6 @@ import re
 from copy import deepcopy 
 from sklearn import preprocessing
 from sklearn.impute  import SimpleImputer
-"""
-Class DM
-Defines constants used in the data_maps
-"""
-
-class DM:
-    Interval = 'I'
-    Binary   = 'B'
-    Nominal  = 'N'
-    ID       = 'Z'
-    Text     = 'T'
-    Ignore   = 'Z'
-    interval = 'I'
-    binary   = 'B'
-    nominal  = 'N'
-    text     = 'T'
-    ignore   = 'Z'
 
 """
 Class ReplaceImputeEncode
