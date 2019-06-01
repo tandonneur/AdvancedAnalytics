@@ -3,9 +3,9 @@ Calculate.py
 DM.py
 DecisionTree.py
 NeuralNetwork.py
-News.py
 ReplaceImputeEncode.py
 Sentiment.py
+stepwise.py
 TextAnalytics.py
 linreg.py
 logreg.py
