@@ -1,5 +1,5 @@
 {% set name = "AdvancedAnalytics" %}
-{% set version = "0.0.5" %}
+{% set version = "1.7" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 4735388ffb9e1ae6697eaec4fc327e7997a5b30b4137baa2a3d835146cc77c45
+  sha256: 5c03b62cf1d4c539d6110809800a4f48a28fb5ae1647c32be294daf9405a2967
 
 build:
   number: 0
@@ -21,7 +21,7 @@ requirements:
     - python
 
 about:
-  home: http://github.com/tandonneur/AdvancedAnalytics
+  home: https://github.com/tandonneur/AdvancedAnalytics
   license: MIT
   license_family: MIT
   license_file: 
