@@ -22,6 +22,7 @@ import warnings
 import numpy  as np
 import pandas as pd
 from math import sqrt, log, pi
+import statsmodels.api as sm
 from sklearn import preprocessing
 from sklearn.impute  import SimpleImputer
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
@@ -847,7 +848,35 @@ class linreg(object):
         BICv  = twoLLv + log(nv)*kv
         print("{:.<23s}{:15.4f}{:15.4f}".format('BIC           ', \
                       BICt, BICv))
-        
+    
+    def forward_regression(X, y,
+                       threshold_in=0.1,
+                       verbose=False):
+        initial_list = []
+        included = list(initial_list)
+        while True:
+            changed=False
+            excluded = list(set(X.columns)-set(included))
+            new_pval = pd.Series(index=excluded)
+            for new_column in excluded:
+                model = sm.OLS(y, \
+                        sm.add_constant(pd.DataFrame(\
+                        X[included+[new_column]]))).fit()
+                new_pval[new_column] = model.pvalues[new_column]
+            best_pval = new_pval.min()
+            if best_pval < threshold_in:
+                best_feature = new_pval.idxmin()
+                included.append(best_feature)
+                changed=True
+                if verbose:
+                    print('Add  {:30} with p-value {:.6}'.format(best_feature,\
+                          best_pval))
+    
+            if not changed:
+                break
+    
+        return included
+
 class logreg(object):
     
     def display_coef(lr, nx, k, col):
@@ -1308,6 +1337,62 @@ class logreg(object):
         cv = classification_report(yv, predict_v, target_names)
         print("\nValidation \nMetrics:\n",cv)
 
+    def forward_regression(X, y,
+                       threshold_in=0.1,
+                       verbose=False):
+        initial_list = []
+        included = list(initial_list)
+        while True:
+            changed=False
+            excluded = list(set(X.columns)-set(included))
+            new_pval = pd.Series(index=excluded)
+            for new_column in excluded:
+                try:
+                    Xc = sm.add_constant(\
+                            pd.DataFrame(X[included+[new_column]]))
+                    model   = sm.Logit(y, Xc)
+                    results = model.fit(method='lbfgs', maxiter=1000, \
+                                retall=False, disp=False, ful_output=False)
+                except:
+                    print("hello")
+                new_pval[new_column] = results.pvalues[new_column]
+            best_pval = new_pval.min()
+            if best_pval < threshold_in:
+                best_feature = new_pval.idxmin()
+                included.append(best_feature)
+                changed=True
+                if verbose:
+                    print('Add  {:30} with p-value {:.6}'.format(best_feature,\
+                          best_pval))
+    
+            if not changed:
+                break
+    
+        return included
+
+
+    def backward_regression(X, y,
+                               threshold_out=0.1,
+                               verbose=False):
+        included=list(X.columns)
+        while True:
+            changed=False
+            model = sm.Logit(y, sm.add_constant(\
+                              pd.DataFrame(X[included]))).fit()
+            # use all coefs except intercept
+            pvalues = model.pvalues.iloc[1:]
+            worst_pval = pvalues.max() # null if pvalues is empty
+            if worst_pval > threshold_out:
+                changed=True
+                worst_feature = pvalues.idxmax()
+                included.remove(worst_feature)
+                if verbose:
+                    print('Drop {:30} with p-value {:.6}'.format(\
+                          worst_feature, worst_pval))
+            if not changed:
+                break
+        return included
+        
 class DecisionTree(object):
     
     def display_metrics(dt, X, y):
