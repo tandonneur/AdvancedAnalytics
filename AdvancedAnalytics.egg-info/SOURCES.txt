@@ -1,7 +1,0 @@
-AdvancedAnalytics.py
-README.md
-setup.py
-AdvancedAnalytics.egg-info/PKG-INFO
-AdvancedAnalytics.egg-info/SOURCES.txt
-AdvancedAnalytics.egg-info/dependency_links.txt
-AdvancedAnalytics.egg-info/top_level.txt
