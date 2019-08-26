@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Aug 23 19:44:15 2019
-
 @author: EJones
 """
 import setuptools
@@ -12,7 +10,7 @@ with open("README.rst", "r") as f:
 
 setuptools.setup(
     name="AdvancedAnalytics", 
-    version="0.7.0", 
+    version="1.4", 
     author="Edward R Jones", 
     author_email="ejones@tamu.edu", 
     url="https://github.com/tandonneur/AdvancedAnalytics", 
@@ -31,5 +29,18 @@ setuptools.setup(
               "sklearn", "StatsModels", "web scraping", "word cloud",
               "regression", "decision trees", "random forest", 
               "neural network", "cross validation", "topic analysis",
-              "sentiment analytic", "natural language processing", "NLP"]
+              "sentiment analytic", "natural language processing", "NLP"],
+    zip_safe=True,
+    install_requires = [
+            "scikit-learn",
+            "scikit-image",
+            "statsmodels",
+            "nltk",
+            "pydotplus",
+            "python-graphviz",
+            "wordcloud",
+            "newspaper3k"]
 )
+# The package "newsapi-python" and "tinysegmenter are not accepted in 
+# required list.  Needs to be install separately pip or 
+# conda install -c conda-forge newsapi-python; likewise for the other
