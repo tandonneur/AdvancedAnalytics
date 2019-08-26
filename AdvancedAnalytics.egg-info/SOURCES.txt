@@ -11,4 +11,6 @@ AdvancedAnalytics/__init__.py
 AdvancedAnalytics.egg-info/PKG-INFO
 AdvancedAnalytics.egg-info/SOURCES.txt
 AdvancedAnalytics.egg-info/dependency_links.txt
+AdvancedAnalytics.egg-info/requires.txt
 AdvancedAnalytics.egg-info/top_level.txt
+AdvancedAnalytics.egg-info/zip-safe

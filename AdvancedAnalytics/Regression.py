@@ -24,14 +24,18 @@ from sklearn.metrics import f1_score, confusion_matrix, \
 class linreg(object):
     
     def display_coef(lr, X, y, col=None):
-        col = X.columns
-        print("\nCoefficients")
+        if type(col)==type(None):
+            try:
+                col = X.columns
+            except:
+                raise RuntimeError("  Call to display_coef is Invalid.\n"+
+                  "  When X is not a pandas dataframe.  Parameter col "+
+                  "required.")
         if len(col)!=X.shape[1]:
             raise RuntimeError("  Call to display_coef is Invalid.\n"+\
                   "  Number of Coefficient Names is not equal to the"+\
                   " Number of Columns in X")
             sys.exit()
-        print("\nCoefficients")
         max_label = len('Intercept')+2
         for i in range(len(col)):
             if len(col[i]) > max_label:
@@ -202,7 +206,7 @@ class linreg(object):
 
 class logreg(object):
     
-    def display_coef(lr, nx, k, col):
+    def display_coef(lr, nx, k, col=None):
         if type(col)==type(None):
            raise RuntimeError("  Call to display_coef Invalid\n" +\
                               "  List of Coefficient Names is Empty. ", \
@@ -738,7 +742,7 @@ class stepwise(object):
                  x_force=None, verbose=False, deep=True):
         
         warnings.simplefilter(action="ignore", category=FutureWarning)
-        if reg==None:
+        if reg!="linear" and reg!="logistic":
             raise RuntimeError("***Call to stepwise invalid. "+\
             "***   Reg must be set to 'linear' or 'logistic'.")
             sys.exit()
@@ -751,7 +755,7 @@ class stepwise(object):
             "***   Required Dataframe has less the 2 observations.")    
         if type(yname)!= str:
             raise RuntimeError("***Call to stepwise invalid. "+\
-                "***   Required parameter not a string name in DataFrame.")
+                "***   Parameter yname not a string name in DataFrame.")
             sys.exit()
         if not(yname in df.columns):
             raise RuntimeError("***Call to stepwise invalid. "+\
@@ -771,10 +775,6 @@ class stepwise(object):
         if method!="stepwise" and method!="forward" and method!="backward":
                 raise RuntimeError("***Call to stepwise invalid. "+\
                                    "***   method is invalid.")
-                sys.exit()
-        if reg!="linear" and reg!="logistic":
-                raise RuntimeError("***Call to stepwise invalid. "+\
-                                   "***   reg is invalid.")
                 sys.exit()
         if type(crit_in)==str:
             if crit_in!="AIC" and crit_in!="BIC":

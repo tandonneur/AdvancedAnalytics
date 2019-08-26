@@ -1,0 +1,8 @@
+scikit-learn
+scikit-image
+statsmodels
+nltk
+pydotplus
+python-graphviz
+wordcloud
+newspaper3k

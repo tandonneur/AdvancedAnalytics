@@ -110,72 +110,97 @@ Installation and Dependencies
 
     pip install AdvancedAnalytics
     # or
-    conda install -c conda-forge AdvancedAnalytics
+    conda install -c dr.jones AdvancedAnalytics
 
 General Dependencies
     There are dependencies.  Most classes import one or more modules from    
     **Sci-Learn**, referenced as *sklearn* in module imports, and 
-    **StatsModels**.  These are both installed in with current versions
-    of **anaconda**, a popular application for coding python solutions.
+    **StatsModels**.  These are both installed with the current version
+    of **anaconda**.
 
-Decision Tree and Random Forest Dependencies
+Installed with AdvancedAnalytics
+    Most packages used by **AdvancedAnalytics** are automatically 
+    installed with its installation.  These consist of the following 
+    packages.
+
+        * statsmodels
+        * scikit-learn
+        * scikit-image
+        * nltk
+        * pydotplus
+        * python-graphviz
+        * wordcloud
+        * newspaper3k
+
+Other Dependencies
     The *Tree* and *Forest* modules plot decision trees and importance
-    metrics using **pydotplus** and the **graphviz** packages.  If these
-    are not installed and you are planning to use the *Tree* or *Forest*
-    modules, they can be installed using the following code.
+    metrics using **pydotplus** and the **graphviz** packages.  These
+    should also be automatically installed with **AdvancedAnalytics**.
+
+    However, the **graphviz** install is sometimes not fully complete 
+    with the conda install.  It may require an additional pip install.
 
     .. code-block:: python
 
-        conda install -c conda-forge pydotplus
-        conda install -c conda-forge graphviz
         pip install graphviz
 
-    One note, the second conda install does not complete the install of 
-    the graphviz package.  To complete the graphviz install, it is 
-    necessary to run the pip install after the conda graphviz install.
-
 Text Analytics Dependencies
-    The *TextAnalytics* module is based on the **NLTK** and **Sci-Learn**
-    text analytics packages.  They are both installed with the current 
-    version of anaconda. 
-
-    However, *TextAnalytics* includes options to produce word clouds, 
-    which are graphic displays of the word collections associated with 
-    topic or data clusters.  The **wordcloud** package is used to produce
-    these graphs.  If you are using the *TextAnalytics* module you can
-    install the **wordcloud** package with the following code.
+    The *TextAnalytics* module uses the **NLTK**, **Sci-Learn**, and 
+    **wordcloud** packages.  Usually these are also automatically 
+    installed automatically with **AdvancedAnalytics**.  You can verify 
+    they are installed using the following commands.
 
     .. code-block:: python
 
-        conda install -c conda-forge wordcloud
+        conda list nltk
+        conda list sci-learn
+        conda list wordcloud
 
-    In addition, data used by the **NLTK** package is not automatically 
-    installed with this package.  These data include the text 
-    dictionary and other data tables.
-
-    The following nltk.download commands should be run before using 
-    **TextAnalytics**. However, it is only necessary to run these once to 
-    download and install the data NLTK uses for text analytics.
+    However, when the **NLTK** package is installed, it does not 
+    install the data used by the package.  In order to load the
+    **NLTK** data run the following code once before using the 
+    *TextAnalytics* module.
 
     .. code-block:: python
 
-        #The following NLTK commands should be run once to 
-        #download and install NLTK data.
+        #The following NLTK commands should be run once
         nltk.download(“punkt”)
         nltk.download(“averaged_preceptron_tagger”)
         nltk.download(“stopwords”)
         nltk.download(“wordnet”)
 
-Internet Dependencies
-    The *Internet* module is contains a class *scrape* which has some   
-    functions for scraping newsfeeds. Some of these is based on the 
-    **newspaper3k** package.  It can be installed using:
+    The **wordcloud** package also uses a little know package
+    **tinysegmenter** version 0.3.  Run the following code to ensure
+    it is installed.
 
     .. code-block:: python
 
-        conda install -c conda-forge newspaper3k
+        conda install -c conda-forge tinysegmenter==0.3
         # or
-        pip install newpaper3k
+        pip install tinysegmenter==0.3
+
+Internet Dependencies
+    The *Internet* module contains a class *scrape* which has some   
+    functions for scraping newsfeeds. Some of these use the 
+    **newspaper3k** package.  It should be automatically installed with 
+    **AdvancedAnalytics**.
+
+    However, it also uses the package **newsapi-python**, which is not 
+    automatically installed.  If you intended to use this news scraping
+    scraping tool, it is necessary to install the package using the 
+    following code:
+
+    .. code-block:: python
+
+        conda install -c conda-forge newsapi
+        # or
+        pip install newsapi
+
+    In addition, the newsapi service is sponsored by a commercial company
+    www.newsapi.com.  You will need to register with them to obtain an 
+    *API* key required to access this service.  This is free of charge 
+    for developers, but there is a fee if *newsapi* is used to broadcast 
+    news with an application or at a website.
 
 Code of Conduct
 ---------------

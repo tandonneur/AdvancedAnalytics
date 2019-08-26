@@ -103,7 +103,7 @@ class ReplaceImputeEncode(object):
     
     def __init__(self, data_map=None, binary_encoding=None,
                nominal_encoding=None, interval_scale=None, no_impute=None, 
-               drop=False, display=True): 
+               drop=False, display=False): 
         if interval_scale=='None' or interval_scale=='none':
             self.interval_scale=None
         else:
@@ -401,6 +401,15 @@ class ReplaceImputeEncode(object):
                 if len(n) < max_n:
                     # Numerical Attribute is Binary or Nominal
                     a   = df[feature].unique()
+                    # Look for string in a
+                    j = 0
+                    for i in range(len(a)):
+                        if type(a[i])==str:
+                            j += 1
+                    if j>0:
+                        print("WARNING: ", feature, "contains both numbers "+
+                              "and strings. Dropping from draft data map.")
+                        break
                     a.sort()
                     categories = tuple(a)
                     if len(a) == 2:
@@ -416,6 +425,17 @@ class ReplaceImputeEncode(object):
                 if len(n) < max_s: 
                     # String Attribute is Binary or Nominal
                     a = df[feature].unique()
+                    # Look for nan in a
+                    no_nan = False
+                    while no_nan == False:
+                        j = -1
+                        for i in range(len(a)):
+                            if type(a[i]) != str:
+                                j = i
+                        if j>0:
+                            a = np.delete(a,j)
+                        else:
+                            no_nan=True
                     a.sort()
                     categories = tuple(a)
                     if len(a) == 2:
