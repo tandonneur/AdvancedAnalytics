@@ -367,18 +367,29 @@ class forest_classifier(object):
             print("{:.<27s}{:9.1f}{:s}".format(\
                     'MISC (Misclassification)', misc, '%'))
             
+            if type(rf.classes_[0]) == str:
+                fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
+            else:
+                fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
             for i in range(len(rf.classes_)):
-                print("{:s}{:.<16.0f}{:>9.1f}{:<1s}".format(\
+                print(fstr.format(\
                       '     class ', rf.classes_[i], miscc[i], '%'))      
                 
             print("\n\n     Confusion")
             print("       Matrix    ", end="")
+            
+            if type(rf.classes_[0]) == str:
+                fstr1 = "{:>7s}{:<3s}"
+                fstr2 = "{:s}{:.<6s}"
+            else:
+                fstr1 = "{:>7s}{:<3.0f}"
+                fstr2 = "{:s}{:.<6.0f}"
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', rf.classes_[i]), 
+                print(fstr1.format('Class ', rf.classes_[i]), 
                       end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', rf.classes_[i]), 
+                print(fstr2.format('Class ', rf.classes_[i]), 
                       end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat[i][j]), end="")
@@ -624,21 +635,28 @@ class forest_classifier(object):
                     'Total Misclassifications', misct_, miscv_))
             print("{:.<27s}{:10.1f}{:s}{:14.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_t, '%', misc_v, '%'))
+
+            classes_ = []
+            if type(rf.classes_[0])==str:
+                classes_ = rf.classes_
+            else:
+                for i in range(n_classes):
+                    classes_.append(str(int(rf.classes_[i])))
             for i in range(n_classes):
                 misct[i] = 100*misct[i]/n_t[i]
                 miscv[i] = 100*miscv[i]/n_v[i]
-                print("{:s}{:.<16.0f}{:>10.1f}{:<1s}{:>14.1f}{:<1s}".format(
-                            '     class ', rf.classes_[i], misct[i], 
+                print("{:s}{:.<16s}{:>10.1f}{:<1s}{:>14.1f}{:<1s}".format(
+                            '     class ', classes_[i], misct[i], 
                             '%', miscv[i], '%'))
     
             print("\n\nTraining")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', rf.classes_[i]), 
+                print("{:>7s}{:<3s}".format('Class ', classes_[i]), 
                       end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', rf.classes_[i]), 
+                print("{:s}{:.<6s}".format('Class ', classes_[i]), 
                       end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_t[i][j]), end="")
@@ -650,11 +668,11 @@ class forest_classifier(object):
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', rf.classes_[i]), 
+                print("{:>7s}{:<3s}".format('Class ', classes_[i]), 
                       end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', rf.classes_[i]), 
+                print("{:s}{:.<6s}".format('Class ', classes_[i]), 
                       end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")

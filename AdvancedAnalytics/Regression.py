@@ -206,30 +206,26 @@ class linreg(object):
 
 class logreg(object):
     
-    def display_coef(lr, nx, k, col=None):
+    def display_coef(lr, X, y, col=None):
         if type(col)==type(None):
-           raise RuntimeError("  Call to display_coef Invalid\n" +\
-                              "  List of Coefficient Names is Empty. ", \
-                              "Unable to Display Coefficients.")
-           sys.exit()
-        if nx<1:
-           raise RuntimeError("]n  Call to display_coef Invalid. " +\
-                              "  Number of attributes (nx) is invalid. ")
-           sys.exit()
-        if len(col)!=nx:
+            try:
+                col = X.columns
+            except:
+                raise RuntimeError("  Call to display_coef is Invalid.\n"+
+                  "  When X is not a pandas dataframe.  Parameter col "+
+                  "required.")
+        if len(col)!=X.shape[1]:
             raise RuntimeError("  Call to display_coef is Invalid.\n"+\
-                  "  Number of Coefficient Names (col) is not equal to the"+\
-                  " Number of Attributes (nx)")
+                  "  Number of Coefficient Names is not equal to the"+\
+                  " Number of Columns in X")
             sys.exit()
-        if k<1:
-           raise RuntimeError("]n  Call to display_coef Invalid. " +\
-                              "  Number of classes (k) is invalid. ")
-           sys.exit()
         max_label = len('Intercept')+2
         for i in range(len(col)):
             if len(col[i]) > max_label:
                 max_label = len(col[i])
         label_format = ("{:.<%i" %max_label)+"s}{:15.4f}"
+        k  = len(lr.classes_)
+        nx = X.shape[1]
         k2 = k
         if k <=2:
             k2 = 1
@@ -444,18 +440,30 @@ class logreg(object):
                     'Total Misclassifications', tmisc))
             print("{:.<27s}{:9.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_, '%'))
+            
+            if type(lr.classes_[0]) == str:
+                fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
+            else:
+                fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
             for i in range(n_classes):
                 misc[i] = 100*misc[i]/n_[i]
-                print("{:s}{:.<16.0f}{:>9.1f}{:<1s}".format(\
+                print(fstr.format(\
                       '     class ', lr.classes_[i], misc[i], '%'))
             print("\n\n     Confusion")
             print("       Matrix    ", end="")
+            
+            if type(lr.classes_[0]) == str:
+                fstr1 = "{:>7s}{:<3s}"
+                fstr2 = "{:s}{:.<6s}"
+            else:
+                fstr1 = "{:>7s}{:<3.0f}"
+                fstr2 = "{:s}{:.<6.0f}"
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', lr.classes_[i]), 
+                print(fstr1.format('Class ', lr.classes_[i]), 
                       end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', lr.classes_[i]), 
+                print(fstr2.format('Class ', lr.classes_[i]), 
                       end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat[i][j]), end="")
@@ -699,19 +707,29 @@ class logreg(object):
                     'Total Misclassifications', misct_, miscv_))
             print("{:.<27s}{:9.1f}{:s}{:10.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_t, '%', misc_v, '%'))
+
+            fstr0="{:s}{:.<16s}{:>9.1f}{:<1s}{:>10.1f}{:<1s}"
+            fstr1="{:>7s}{:<3s}"
+            fstr2="{:s}{:.<6s}"
+            classes_ = []
+            if type(lr.classes_[0])==str:
+                classes_ = lr.classes_
+            else:
+                for i in range(n_classes):
+                    classes_.append(str(int(lr.classes_[i])))
             for i in range(n_classes):
                 misct[i] = 100*misct[i]/n_t[i]
                 miscv[i] = 100*miscv[i]/n_v[i]
-                print("{:s}{:.<16.0f}{:>9.1f}{:<1s}{:>10.1f}{:<1s}".format(\
-                      '     class ', lr.classes_[i], misct[i], '%', miscv[i], '%'))
+                print(fstr0.format(\
+                      '     class ', classes_[i], misct[i], '%', miscv[i], '%'))
     
             print("\n\nTraining")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', lr.classes_[i]), end="")
+                print(fstr1.format('Class ', classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', lr.classes_[i]), end="")
+                print(fstr2.format('Class ', classes_[i]), end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_t[i][j]), end="")
                 print("")
@@ -722,10 +740,10 @@ class logreg(object):
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', lr.classes_[i]), end="")
+                print(fstr1.format('Class ', classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', lr.classes_[i]), end="")
+                print(fstr2.format('Class ', classes_[i]), end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")

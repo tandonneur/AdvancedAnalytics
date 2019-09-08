@@ -199,7 +199,7 @@ class scrape(object):
             m = len(pg)
         return pg.strip()
 
-    def newsapi_get_urls(search_words, urls=None, key=None):
+    def newsapi_get_urls(search_words, key, urls=None):
         if urls==None:
             agency_urls = {
                 'abc-news': 'https://abcnews.go.com',
@@ -265,8 +265,8 @@ class scrape(object):
         if len(search_words)==0 or agency_urls==None:
             return None
         print("Searching agencies for pages containing:", search_words)
-        # This is my API key, each user must request their own
-        # API key from https://newsapi.org/account
+       
+        # Get your NEWSAPI key from https://newsapi.org/account
         try:
             api = NewsApiClient(api_key=key)
         except:
@@ -361,27 +361,27 @@ class scrape(object):
     
 class Metrics:
     # Function for calculating loss and confusion matrix
-    def binary_loss(y, y_predict, fp_cost, fn_cost, display=True):
+    def binary_loss(y, y_predict, fn_cost, fp_cost, display=True):
         loss     = [0, 0]       #False Neg Cost, False Pos Cost
-        conf_mat = [0, 0, 0, 0] #tn, fp, fn, tp
+        conf_mat = [[0, 0], [0, 0]] #tn, fp, fn, tp
         for j in range(len(y)):
             if y[j]==0:
                 if y_predict[j]==0:
-                    conf_mat[0] += 1 #True Negative
+                    conf_mat[0][0] += 1 #True Negative
                 else:
-                    conf_mat[1] += 1 #False Positive
+                    conf_mat[0][1] += 1 #False Positive
                     loss[1] += fp_cost[j]
             else:
                 if y_predict[j]==1:
-                    conf_mat[3] += 1 #True Positive
+                    conf_mat[1][1] += 1 #True Positive
                 else:
-                    conf_mat[2] += 1 #False Negative
+                    conf_mat[1][0] += 1 #False Negative
                     loss[0] += fn_cost[j]
         if display:
             fn_loss = loss[0]
             fp_loss = loss[1]
             total_loss = fn_loss + fp_loss
-            misc    = conf_mat[1] + conf_mat[2]
+            misc    = conf_mat[0][1] + conf_mat[1][0]
             misc    = misc/len(y)
             print("{:.<23s}{:10.4f}".format("Misclassification Rate", misc))
             print("{:.<23s}{:10.0f}".format("False Negative Loss", fn_loss))

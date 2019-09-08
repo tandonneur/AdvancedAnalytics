@@ -16,12 +16,14 @@ from copy import deepcopy #Used to create sentiment word dictionary
 import re
 import pickle
 
-#Class DT - DataType
+#Class DT - DataType This is setup to provide a clean
+#notation for data maps used by ReplaceImputeEncode
 class DT():
     # @attributes: characters recognized in RIE code
     Interval = 'I' #Expected values (lowest value, highest value)
     Binary   = 'B' #Expected values (class0, class1)
     Nominal  = 'N' #Expected values (class0, class1, ... classk)
+    Ordinal  = 'O' #Expected values ordered classes (class0, class1, ...)
     String   = 'S' #Expected values ("")
     ID       = 'Z' #Expected values ("")
     Text     = 'T' #Expected values ("")
@@ -29,6 +31,7 @@ class DT():
     interval = 'I' #Allow lower case
     binary   = 'B' #Allow lower case
     nominal  = 'N' #Allow lower case
+    ordinal  = 'O' #Allow lower case
     string   = 'S' #Allow lower case
     text     = 'T' #Allow lower case
     ignore   = 'Z' #Allow lower case
@@ -39,6 +42,7 @@ class DT():
                 'DT.Interval',
                 'DT.Binary', 
                 'DT.Nominal', 
+                'DT.Ordinal',
                 'DT.ID', 
                 'DT.Text ', 
                 'DT.String',
@@ -53,6 +57,8 @@ class DT():
              ctype ='DT.Binary'
         elif atype==DT.Nominal:
              ctype ='DT.Nominal'
+        elif atype==DT.Ordinal:
+             ctype ='DT.Ordinal'
         elif atype==DT.String:
              ctype ='DT.String'
         elif atype==DT.Text:
@@ -512,7 +518,7 @@ class ReplaceImputeEncode(object):
         return data_map
             
     def display_data_map(self):
-        # Display and Return Data Map Dictionary
+        # Display Data Map Dictionary
         try:
             if self.features_map==None:
                 raise RuntimeError("Data Map Does not Exist")
@@ -670,28 +676,21 @@ class ReplaceImputeEncode(object):
     def encode_binary(self):
         # Uses 1 and -1 encoding for binary instead of 0, 1
         # SAS uses the 1, -1 convention
-        if self.n_binary == 0 or self.nominal_encoding == None:
+        if self.n_binary == 0 or self.binary_encoding == None:
             return
         if self.binary_encoding == 'SAS':
-            for j in range(self.n_binary):
-                k = self.imputed_binary_data[0:,j].argmin()
-                smallest = self.imputed_binary_data[k,j]
-                for i in range(self.n_obs):
-                    if self.imputed_binary_data[i,j] == smallest:
-                        self.imputed_binary_data[i,j] = -1
-                    else:
-                        self.imputed_binary_data[i,j] = 1
-        """
-        if self.binary_encoding == 'one-hot':
-            for j in range(self.n_binary):
-                k = self.imputed_binary_data[0:,j].argmin()
-                smallest = self.imputed_binary_data[k,j]
-                for i in range(self.n_obs):
-                    if self.imputed_binary_data[i,j] == smallest:
-                        self.imputed_binary_data[i,j] = 0
-                    else:
-                        self.imputed_binary_data[i,j] = 1
-         """     
+            low = -1.0
+        else:  # One-hot encoding
+            low = 0.0
+        for j in range(self.n_binary):
+            k = self.imputed_binary_data[0:,j].argmin()
+            smallest = self.imputed_binary_data[k,j]
+            for i in range(self.n_obs):
+                if self.imputed_binary_data[i,j] == smallest:
+                    self.imputed_binary_data[i,j] = low
+                else:
+                    self.imputed_binary_data[i,j] = 1
+   
     def encode_nominal(self):
         if (self.n_nominal==0 or self.nominal_encoding==None):
             return
@@ -716,8 +715,8 @@ class ReplaceImputeEncode(object):
                'found in the data_map.')
             sys.exit()
             
-        # SAS Encoding subtracts the last one-hot vector from the others, for
-        # each nominal attribute.
+        # SAS Encoding subtracts the last one-hot vector from the others, 
+        # for each nominal attribute.
         if self.nominal_encoding == 'SAS':
             self.sas_encoded = \
                 np.zeros((self.n_obs, (self.n_onehot-self.n_nominal)))

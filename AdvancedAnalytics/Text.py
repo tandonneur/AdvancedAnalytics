@@ -7,10 +7,12 @@
 import sys
 import warnings
 import numpy  as np
+import pandas as pd
 
 from copy import deepcopy #Used to create sentiment word dictionary
 
 import matplotlib.pyplot as plt
+import matplotlib.pylab  as pylab
 import random
 import string
 import re
@@ -22,10 +24,8 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet as wn
 from nltk.corpus import stopwords
  
-#from wordcloud import WordCloud, STOPWORDS
 #from PIL import Image
 from wordcloud import WordCloud, STOPWORDS
-from PIL import Image
 
 class text_analysis(object):  
     def __init__(self, synonyms=None, stop_words=None, pos=True, stem=True):
@@ -155,58 +155,53 @@ class text_analysis(object):
             stemmed_tokens = tagged_tokens
         return stemmed_tokens
     
-    def score_topics(v, tf_matrix):
-        # ***** SCORE DOCUMENTS ***** Score = TF x V
-        ntopics  = v.shape[0]            # Number of topic clusters
-        ndocs    = tf_matrix.shape[0]    # Number of documents
-        
-        # doc_scores is returned as a list of lists
-        # The number of lists is ndocs
-        # Each list has ntopics+1 values, where the first is 
-        # the cluster number.  The others are the document's 
-        # scores for each cluster.
-        doc_scores   = [[0]*(ntopics+1)] * ndocs
-        # topic_counts is a list of the number of documents
-        # for each cluster
-        topic_counts =  [0]*ntopics
-        
-        for d in range(ndocs):
-            idx       = 0
-            max_score = -1e+64
-            # Calculate Review Score
-            k = tf_matrix[d].nonzero()
-            nwords    = len(k[0])
-            doc_score = [0]*(ntopics+1)
-            # get scores for rth doc, ith topic
-            totalscore = 0
-            for i in range(ntopics):
-                score  = 0
-                for j in range(nwords):
-                    l = k[1][j]
-                    if tf_matrix[d,l] != 0:
-                            score += tf_matrix[d,l] * v[i][l]
-                doc_score[i+1] = score
-                abscore        = abs(score)
-                totalscore    += abscore
-                if abscore > max_score:
-                    max_score  = abscore
-                    idx        = i
-            # Save review's highest scores
-            # Normalize topic score to sum to 1 (probabilities)
-            doc_score[1:] = np.abs(doc_score[1:])/totalscore
-            doc_score [0] = idx
-            doc_scores[d] = doc_score
-            topic_counts[idx] += 1
-        # Display the number of documents for each cluster
-        print('{:<6s}{:>8s}{:>8s}'.format("TOPIC", "REVIEWS", "PERCENT"))
-        for i in range(ntopics):
-            print('{:>3d}{:>10d}{:>8.1%}'.format((i+1), topic_counts[i], \
-                  topic_counts[i]/ndocs))
-        return doc_scores # ndocs x (ntopics+1)
+    def score_topics(u, display=True):
+        topics = True
+        scores = True
+        if topics==False and scores==False:
+            return None
+        n_reviews = u.shape[0]
+        if n_reviews <= 0:
+            print("Number of reviews is zero")
+            sys.exit()
+        n_topics  = u.shape[1]
+        if n_topics <= 0:
+            print("Number of topics is zero")
+            sys.exit()
+        doc_prob  = np.array([0.0]*n_reviews, dtype=float)
+        doc_topic = np.array([0.0]*n_reviews, dtype=float)
+        for i in range(n_reviews):
+            doc_prob[i] = u[i].max()
+            for j in range(n_topics):
+                if u[i][j] == doc_prob[i]:
+                    doc_topic[i] = j
+                    continue
+        z = np.asarray([doc_topic, doc_prob])
+        z = z.T
+        df = pd.DataFrame(z, columns=['topic', 'prob'])
+        if display==True:
+            df0 = df.groupby('topic').count()
+            df0 = df0.rename(columns={'prob':'N'})
+            df0.index = df0.index.astype('int')
+            print("\n  ***Topic Counts***\n")
+            print("  Topic     N     P")
+            df0['P'] = 0.0 * n_topics
+            for t in (range(n_topics)):
+                x = df0['N'].iloc[t]*100/n_reviews
+                df0['P'].iloc[t] = x
+            
+            df0.plot.bar(y='P', xlim=(0, n_topics-1), fontsize=14)
+            
+            for t in (range(n_topics)):
+                print("    {:<5d}{:>5d}{:>7.1f}%".format(t, \
+                      df0['N'].iloc[t], df0['P'].iloc[t]))
+        if scores==False:
+            df = df['topic']
+        return df # ndocs x (1 or 2)
 
-    def display_topics(lda, terms, n_terms=15, \
+    def display_topics(uv, terms, n_terms=15, \
                        word_cloud=False, mask=None):
-        for topic_idx, topic in enumerate(lda):
+        for topic_idx, topic in enumerate(uv.components_):
             message  = "Topic #%d: " %(topic_idx+1)
             print(message)
             abs_topic = abs(topic)
@@ -255,19 +250,20 @@ class text_analysis(object):
 
 class text_plot(object):
     
-    def shades_of_grey(word, font_size, position, orientation, 
+    def shades_of_gray(word, font_size, position, orientation, 
                        random_state=None, **kwargs):
         return "hsl(0, 0%%, %d%%)" % random.randint(60,1000)
     
     def word_cloud_string(s, mask=None, bg_color="maroon", 
-                          stopwords=None, max_words=30):
+                          stopwords=None, max_words=30, random=12345,
+                          size=(400, 200)):
         try:
             wcloud = WordCloud(background_color=bg_color,   
                    mask=mask, max_words=max_words, stopwords=stopwords, 
                    max_font_size=40,  prefer_horizontal=0.9,  
                    min_font_size=10, relative_scaling=0.5,    
-                   width=400, height=200, scale=1, margin=10, 
-                   random_state=12345)
+                   width=size[0], height=size[1], scale=1, margin=10, 
+                   random_state=random)
         except NameError as err:
             msg = "\nWord Cloud Package Not Installed\n"+\
                    "Install using: CONDA INSTALL WORDCLOUD\n"+\
@@ -277,21 +273,22 @@ class text_plot(object):
         # Show Word Cloud based term Frequencies (unweighted)
         wcloud.generate(s)
         plt.imshow( \
-        wcloud.recolor(color_func=text_plot.shades_of_grey, \
-                       random_state=12345), interpolation="bilinear")
+        wcloud.recolor(color_func=text_plot.shades_of_gray, \
+                       random_state=random), interpolation="bilinear")
         plt.axis("off")
         plt.figure()
         plt.show()
         return
     
-    def word_cloud_dic(td, mask=None, bg_color="maroon", max_words=30):
+    def word_cloud_dic(td, mask=None, bg_color="maroon", 
+                       max_words=30, random=12345, size=(400, 200)):
         try:
             wcloud = WordCloud(background_color=bg_color,   
                    mask=mask, max_words=max_words, 
                    max_font_size=40,  prefer_horizontal=0.9,  
                    min_font_size=10, relative_scaling=0.5,    
-                   width=400, height=200, scale=1, margin=10, 
-                   random_state=12345)
+                   width=size[0], height=size[1], scale=1, margin=10, 
+                   random_state=random)
         except NameError as err:
             msg = "\nWord Cloud Package Not Installed\n"+\
                    "Install using: CONDA INSTALL WORDCLOUD\n"+\
@@ -301,8 +298,8 @@ class text_plot(object):
         # Show Word Cloud based term Frequencies (unweighted)
         wcloud.generate_from_frequencies(td)
         plt.imshow( \
-                   wcloud.recolor(color_func=text_plot.shades_of_grey, \
-                            random_state=12345), interpolation="bilinear")
+                   wcloud.recolor(color_func=text_plot.shades_of_gray, \
+                            random_state=random), interpolation="bilinear")
         plt.axis("off")
         plt.figure()
         plt.show()
@@ -352,7 +349,7 @@ class sentiment_analysis(object):
             # reversing the sign if the sentiment term is preceded 
             # by "no" or "not".  It will also do this for expressions
             # like this cannot be good.  As a results sentiments here
-            # will likely be lower than those seen in the Afinn codee.
+            # will likely be lower than those seen in the Afinn code.
             dic={
                 "abandon": -2, "abandoned": -2, "abandons": -2, 
                 "abducted": -2, "abduction": -2, "abductions": -2, 
@@ -1638,5 +1635,8 @@ class sentiment_analysis(object):
         for i in range(len(self.max_list)):
             print("{:<s}{:<d}{:<s}{:<5.2f}".format("    Review ", \
                   self.max_list[i],  " Sentiment is ", max_sentiment))
-        # Returns scores and number of sentiment terms for each doc   
-        return sentiment_score, n_sw
+        # Returns scores and number of sentiment terms for each doc  
+        dfs = pd.DataFrame(sentiment_score, columns=['sentiment'])
+        dfn = pd.DataFrame(n_sw, columns=['n_words'])
+        dfs = dfs.join(dfn)
+        return dfs
