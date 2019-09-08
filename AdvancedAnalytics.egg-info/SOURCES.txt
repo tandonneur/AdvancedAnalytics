@@ -5,7 +5,7 @@ AdvancedAnalytics/Internet.py
 AdvancedAnalytics/NeuralNetwork.py
 AdvancedAnalytics/Regression.py
 AdvancedAnalytics/ReplaceImputeEncode.py
-AdvancedAnalytics/TextAnalytics.py
+AdvancedAnalytics/Text.py
 AdvancedAnalytics/Tree.py
 AdvancedAnalytics/__init__.py
 AdvancedAnalytics.egg-info/PKG-INFO

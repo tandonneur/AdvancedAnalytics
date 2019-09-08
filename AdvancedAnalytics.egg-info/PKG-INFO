@@ -1,12 +1,12 @@
 Metadata-Version: 1.1
 Name: AdvancedAnalytics
-Version: 1.4
+Version: 1.8
 Summary: Python support for 'The Art and Science of Data Analytics'
 Home-page: https://github.com/tandonneur/AdvancedAnalytics
 Author: Edward R Jones
 Author-email: ejones@tamu.edu
 License: UNKNOWN
-Description: ﻿AdvancedAnalytics
+Description: AdvancedAnalytics
         ===================
         
         A collection of python modules, classes and methods for simplifying the use of machine learning solutions.  **AdvancedAnalytics** provides easy access to advanced tools in **Sci-Learn**, **NLTK** and other machine learning packages.  **AdvancedAnalytics** was developed to simplify learning python from the book *The Art and Science of Data Analytics*.
@@ -33,7 +33,7 @@ Description: ﻿AdvancedAnalytics
         Documentation and Examples
         ============================
         
-        The API and documentation for all classes and examples are available at https://github.com/tandonneur/AdvancedAnalytics . 
+        The API and documentation for all classes and examples are available at https://github.com/tandonneur/AdvancedAnalytics/. 
         
         Usage
         =====
@@ -99,9 +99,10 @@ Description: ﻿AdvancedAnalytics
                 * nn_regressor support for regressor neural networks
                 * nn_classifier support for classification neural networks
         
-        TextAnalytics
+        Text
             Classes for Text Analytics
                 * text_analysis support for topic analysis
+                * text_plot for word clouds
                 * sentiment_analysis support for sentiment analysis
         
         Internet
