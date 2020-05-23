@@ -1,8 +1,8 @@
 """
 
 @author: Edward R Jones
-@version 1.0
-@copyright 2018 - Edward R Jones, all rights reserved.
+@version 1.9
+@copyright 2019 - Edward R Jones, all rights reserved.
 """
 #from DT import DT
 import sys
@@ -15,10 +15,10 @@ from copy import deepcopy #Used to create sentiment word dictionary
 
 import re
 import pickle
-
+from enum import Enum
 #Class DT - DataType This is setup to provide a clean
 #notation for data maps used by ReplaceImputeEncode
-class DT():
+class DT(Enum):
     # @attributes: characters recognized in RIE code
     Interval = 'I' #Expected values (lowest value, highest value)
     Binary   = 'B' #Expected values (class0, class1)
@@ -39,14 +39,14 @@ class DT():
     # @methods
     def getDataTypes():
         dtype = [
-                'DT.Interval',
-                'DT.Binary', 
-                'DT.Nominal', 
-                'DT.Ordinal',
-                'DT.ID', 
-                'DT.Text ', 
-                'DT.String',
-                'DT.Ignore '
+                DT.Interval,
+                DT.Binary, 
+                DT.Nominal, 
+                DT.Ordinal,
+                DT.ID, 
+                DT.Text , 
+                DT.String,
+                DT.Ignore 
                 ]
         return dtype #Returns data type list
     
@@ -106,7 +106,6 @@ class ReplaceImputeEncode
 """
 
 class ReplaceImputeEncode(object):
-    
     def __init__(self, data_map=None, binary_encoding=None,
                nominal_encoding=None, interval_scale=None, no_impute=None, 
                drop=False, display=False): 
@@ -178,8 +177,7 @@ class ReplaceImputeEncode(object):
             self.missing_counts[feature] = 0
             self.outlier_counts[feature] = 0
             regex = re.compile("[BINTZ]", re.IGNORECASE)
-            t = str(v[0])
-            t = t.upper()
+            t = v[0].value
             if not regex.match(t):
                 raise TypeError(
                   "***Data Map in call to ReplaceImputeEncode invalid. "+
@@ -262,8 +260,7 @@ class ReplaceImputeEncode(object):
         self.onehot_cats         = []
         self.hot_drop_list       = []
         for feature,v in self.features_map.items():
-            t=str(v[0])
-            t=t.upper()
+            t=v[0].value
             if not (regex.match(t)):
                 raise RuntimeError( 
                   "***Data Map in call to ReplaceImputeEncode invalid.\n"+
@@ -419,12 +416,15 @@ class ReplaceImputeEncode(object):
                     a.sort()
                     categories = tuple(a)
                     if len(a) == 2:
-                        draft_features_map[feature]=[DT.Binary, categories]
+                        draft_features_map[feature]=[DT.Binary, 
+                                          categories]
                     else:
-                        draft_features_map[feature]=[DT.Nominal,categories]
+                        draft_features_map[feature]=[DT.Nominal,
+                                          categories]
                 else:
                     # Attribute is Interval
-                    draft_features_map[feature]=[DT.Interval,(min_, max_)]
+                    draft_features_map[feature]=[DT.Interval,
+                                      (min_, max_)]
 
             else:
                 # String Attribute is Binary, Nominal or Text or String
@@ -445,9 +445,11 @@ class ReplaceImputeEncode(object):
                     a.sort()
                     categories = tuple(a)
                     if len(a) == 2:
-                        draft_features_map[feature]=[DT.Binary, categories]
+                        draft_features_map[feature]=[DT.Binary, 
+                                          categories]
                     else:
-                        draft_features_map[feature]=[DT.Nominal,categories]
+                        draft_features_map[feature]=[DT.Nominal,
+                                          categories]
                 else:
                     k = df[feature].apply(len).median()
                     if k>100:
@@ -474,6 +476,7 @@ class ReplaceImputeEncode(object):
         if out != None:
             #Save this draft map as a pickle file <out>
             self.save_data_map(draft_features_map, out)
+        print(draft_features_map)
         return draft_features_map
     
     def update_feature(self, feature, datatype, dataval):

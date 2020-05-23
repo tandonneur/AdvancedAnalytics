@@ -3,7 +3,7 @@
 """
 
 @author: Edward R Jones
-@version 1.0
+@version 1.9
 @copyright 2019 - Edward R Jones, all rights reserved.
 """
 
@@ -765,9 +765,9 @@ class stepwise(object):
             "***   Reg must be set to 'linear' or 'logistic'.")
             sys.exit()
         if type(df)!= pd.DataFrame:
-            raise RuntimeError("***Call to stepwise invalid. "+\
-            "***   Required parameter reg must be set to linear or logistic.")
-            sys.exit()
+            #raise RuntimeError("***Call to stepwise invalid. "+\
+            #"***   DF Not DataFrame  ***")
+            pass
         if df.shape[0] < 2:
             raise RuntimeError("***Call to stepwise invalid. "+\
             "***   Required Dataframe has less the 2 observations.")    
@@ -911,7 +911,7 @@ class stepwise(object):
                 model = sm.OLS(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit()
             else:
-                model = sm.Logit(y, sm.add_constant(\
+                model = sm.MNLogit(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit(disp=False)
             pvalues = model.pvalues.iloc[1:]
             worst_pval = pvalues.max()
@@ -950,7 +950,7 @@ class stepwise(object):
                     new_pval[new_column] = results.pvalues[new_column]
             else:
                 for new_column in excluded:
-                    model = sm.Logit(y, \
+                    model = sm.MNLogit(y, \
                             sm.add_constant(pd.DataFrame(\
                             X[included+[new_column]]))).fit(disp=False)
                     new_pval[new_column] = model.pvalues[new_column]
@@ -985,7 +985,7 @@ class stepwise(object):
                 model = sm.OLS(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit()
             else:
-                model = sm.Logit(y, sm.add_constant(\
+                model = sm.MNLogit(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit(disp=False)
                 
             for new_column in included:

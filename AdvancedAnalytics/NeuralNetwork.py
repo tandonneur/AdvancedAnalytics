@@ -1,6 +1,6 @@
 """
 @author: Edward R Jones
-@version 1.0
+@version 1.9
 @copyright 2019 - Edward R Jones, all rights reserved.
 """
 
