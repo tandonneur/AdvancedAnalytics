@@ -37,9 +37,7 @@ setuptools.setup(
             "statsmodels",
             "nltk",
             "pydotplus",
-            "python-graphviz",
-            "wordcloud",
-            "newspaper3k"]
+            "python-graphviz"]
 )
 # The package "newsapi-python" and "tinysegmenter are not accepted in 
 # required list.  Needs to be install separately pip or 
