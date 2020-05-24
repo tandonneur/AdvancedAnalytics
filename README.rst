@@ -56,7 +56,7 @@ The intention is to expand this list to other packages.  This is a simple exampl
     encoded_df = rie.fit_transform(df)
     y = encoded_df[“Salary”]
     X = encoded_df.drop(“Salary”, axis=1)
-    dt = DecisionTreeRegressor(criterion= “gini”, max_depth=4
+    dt = DecisionTreeRegressor(criterion= “gini”, max_depth=4,
                                 min_samples_split=5, min_samples_leaf=5)
     dt = dt.fit(X,y)
     tree_regressor.display_importance(dt, encoded_df.columns)
