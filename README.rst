@@ -129,9 +129,6 @@ Installed with AdvancedAnalytics
         * scikit-image
         * nltk
         * pydotplus
-        * python-graphviz
-        * wordcloud
-        * newspaper3k
 
 Other Dependencies
     The *Tree* and *Forest* modules plot decision trees and importance

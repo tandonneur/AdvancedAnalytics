@@ -36,8 +36,7 @@ setuptools.setup(
             "scikit-image",
             "statsmodels",
             "nltk",
-            "pydotplus",
-            "python-graphviz"]
+            "pydotplus"]
 )
 # The package "newsapi-python" and "tinysegmenter are not accepted in 
 # required list.  Needs to be install separately pip or 
