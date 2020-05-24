@@ -46,17 +46,17 @@ The intention is to expand this list to other packages.  This is a simple exampl
     from sklearn.tree import DecisionTreeRegressor, export_graphviz 
     # Data Map Using DT, Data Types
     data_map = {
-        “Salary”:         [DT.Interval, (20000.0, 2000000.0)],
-        “Department”:     [DT.Nominal, (“HR”, “Sales”, “Marketing”)] 
-        “Classification”: [DT.Nominal, (1, 2, 3, 4, 5)]
-        “Years”:          [DT.Interval, (18, 60)] }
+        "Salary":         [DT.Interval, (20000.0, 2000000.0)],
+        "Department":     [DT.Nominal, ("HR", "Sales", "Marketing")] 
+        "Classification": [DT.Nominal, (1, 2, 3, 4, 5)]
+        "Years":          [DT.Interval, (18, 60)] }
     # Preprocess data from data frame df
     rie = ReplaceImputeEncode(data_map=data_map, interval_scaling=None,
-                              nominal_encoding= “SAS”, drop=True)
+                              nominal_encoding= "SAS", drop=True)
     encoded_df = rie.fit_transform(df)
-    y = encoded_df[“Salary”]
-    X = encoded_df.drop(“Salary”, axis=1)
-    dt = DecisionTreeRegressor(criterion= “gini”, max_depth=4,
+    y = encoded_df["Salary"]
+    X = encoded_df.drop("Salary", axis=1)
+    dt = DecisionTreeRegressor(criterion= "gini", max_depth=4,
                                 min_samples_split=5, min_samples_leaf=5)
     dt = dt.fit(X,y)
     tree_regressor.display_importance(dt, encoded_df.columns)
@@ -165,10 +165,10 @@ Text Analytics Dependencies
     .. code-block:: python
 
         #The following NLTK commands should be run once
-        nltk.download(“punkt”)
-        nltk.download(“averaged_preceptron_tagger”)
-        nltk.download(“stopwords”)
-        nltk.download(“wordnet”)
+        nltk.download("punkt")
+        nltk.download("averaged_preceptron_tagger")
+        nltk.download("stopwords")
+        nltk.download("wordnet")
 
     The **wordcloud** package also uses a little know package
     **tinysegmenter** version 0.3.  Run the following code to ensure
