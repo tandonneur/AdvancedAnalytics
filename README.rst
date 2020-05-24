@@ -1,4 +1,4 @@
-﻿AdvancedAnalytics
+AdvancedAnalytics
 ===================
 
 A collection of python modules, classes and methods for simplifying the use of machine learning solutions.  **AdvancedAnalytics** provides easy access to advanced tools in **Sci-Learn**, **NLTK** and other machine learning packages.  **AdvancedAnalytics** was developed to simplify learning python from the book *The Art and Science of Data Analytics*.
@@ -25,7 +25,7 @@ The last stage, *solution postprocessing*, involves developing graphic summaries
 Documentation and Examples
 ============================
 
-The API and documentation for all classes and examples are available at https://github.com/tandonneur/AdvancedAnalytics . 
+The API and documentation for all classes and examples are available at https://github.com/tandonneur/AdvancedAnalytics/. 
 
 Usage
 =====
@@ -57,7 +57,7 @@ The intention is to expand this list to other packages.  This is a simple exampl
     y = encoded_df[“Salary”]
     X = encoded_df.drop(“Salary”, axis=1)
     dt = DecisionTreeRegressor(criterion= “gini”, max_depth=4
-                                min_samples_split=5, min_samples_leaf5)
+                                min_samples_split=5, min_samples_leaf=5)
     dt = dt.fit(X,y)
     tree_regressor.display_importance(dt, encoded_df.columns)
     tree_regressor.display_metrics(dt, X, y)
@@ -91,9 +91,10 @@ NeuralNetwork
         * nn_regressor support for regressor neural networks
         * nn_classifier support for classification neural networks
 
-TextAnalytics
+Text
     Classes for Text Analytics
         * text_analysis support for topic analysis
+        * text_plot for word clouds
         * sentiment_analysis support for sentiment analysis
 
 Internet
