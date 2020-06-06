@@ -3,8 +3,8 @@
 """
 
 @author: Edward R Jones
-@version 1.9
-@copyright 2019 - Edward R Jones, all rights reserved.
+@version 1.13
+@copyright 2020 - Edward R Jones, all rights reserved.
 """
 
 import sys
@@ -41,9 +41,15 @@ class linreg(object):
             if len(col[i]) > max_label:
                 max_label = len(col[i])
         label_format = ("{:.<%i" %max_label)+"s}{:15.4f}"
-        print(label_format.format('Intercept', lr.intercept_))
-        for i in range(X.shape[1]):
-            print(label_format.format(col[i], lr.coef_[i]))
+        
+        if type(lr) != sm.regression.linear_model.RegressionResultsWrapper:
+            print("TYPE: ", type(lr))
+            print(label_format.format('Intercept', lr.intercept_))
+            for i in range(X.shape[1]):
+                print(label_format.format(col[i], lr.coef_[i]))
+        else:
+            for i in range(X.shape[1]):
+                print(label_format.format(col[i], lr.params[i]))
     
     def display_metrics(lr, X, y, w=None):
         predictions = lr.predict(X)
@@ -224,7 +230,10 @@ class logreg(object):
             if len(col[i]) > max_label:
                 max_label = len(col[i])
         label_format = ("{:.<%i" %max_label)+"s}{:15.4f}"
-        k  = len(lr.classes_)
+        if type(y) == np.ndarray:
+            k = len(np.unique(y)) #numpy array
+        else:
+            k = len(lr.classes_) #pandas vector
         nx = X.shape[1]
         k2 = k
         if k <=2:
@@ -874,12 +883,12 @@ class stepwise(object):
         initial_list = []
         included = initial_list
         if self.crit_out<self.crit_in:
-            warnings.warn("\n***Call to stepwise invalid: "+ \
-                "crit_out < crit_in, setting crit_out to crit_in")
-            self.crit_out = self.crit_in
-            
+            raise RuntimeError("\n***Call to stepwise invalid: "+ \
+                "crit_out smaller than crit_in.")
+            sys.exit()
         X = self.df_copy[self.xnames]
         y = self.df_copy[self.yname]
+        warnings.filterwarnings("once", category=UserWarning)
         while True:
             changed=False
             # forward step
@@ -890,39 +899,39 @@ class stepwise(object):
                     model = sm.OLS(y, \
                             sm.add_constant(pd.DataFrame(\
                             X[included+[new_column]]))).fit()
-                    new_pval[new_column] = model.pvalues[new_column]
+                    new_pval[new_column] = model.pvalues.loc[new_column]
             else:            
                 for new_column in excluded:
-                    model = sm.Logit(y, \
-                            sm.add_constant(pd.DataFrame(\
-                            X[included+[new_column]]))).fit(disp=False)
-                    new_pval[new_column] = model.pvalues[new_column]
+                    Xc      = sm.add_constant(pd.DataFrame(X[included+[new_column]]))
+                    model   = sm.Logit(y, Xc)
+                    results = model.fit(disp=False)
+                    new_pval[new_column] = results.pvalues.loc[new_column]
             best_pval = new_pval.min()
             if best_pval < self.crit_in:
                 best_feature = new_pval.idxmin()
                 included.append(best_feature)
                 changed=True
                 if self.verbose:
-                    print('Add  {:30} with p-value {:.6}'.format(\
-                          best_feature,\
-                          best_pval))
+                    print('Add  {:30} with p-value {:.6}'.
+                          format(best_feature, best_pval))
             # backward step
             if self.reg=="linear":
-                model = sm.OLS(y, sm.add_constant(\
-                                pd.DataFrame(X[included]))).fit()
+                model   = sm.OLS(y, sm.add_constant(\
+                                                  pd.DataFrame(X[included])))
+                results = model.fit()
             else:
-                model = sm.MNLogit(y, sm.add_constant(\
-                                pd.DataFrame(X[included]))).fit(disp=False)
-            pvalues = model.pvalues.iloc[1:]
+                Xc      = sm.add_constant(pd.DataFrame(X[included]))
+                model   = sm.Logit(y, Xc)
+                results = model.fit(disp=False)
+            pvalues = results.pvalues.iloc[1:]
             worst_pval = pvalues.max()
             if worst_pval > self.crit_out:
                 worst_feature = pvalues.idxmax()
                 included.remove(worst_feature)
                 changed=True
                 if self.verbose:
-                    print('Remove {:30} with p-value {:.6}'.format(\
-                          worst_feature,\
-                          worst_pval))
+                    print('Remove {:30} with p-value {:.6}'.
+                          format(worst_feature,worst_pval))
             if not changed:
                 break
         return included
@@ -937,6 +946,7 @@ class stepwise(object):
         included = list(initial_list)
         X = self.df_copy[self.xnames]
         y = self.df_copy[self.yname]
+        warnings.filterwarnings("once", category=UserWarning)
         while True:
             changed=False
             excluded = list(set(X.columns)-set(included))
@@ -946,14 +956,14 @@ class stepwise(object):
                     model = sm.OLS(y, \
                             sm.add_constant(pd.DataFrame(\
                             X[included+[new_column]])))
-                    results = model.fit()
-                    new_pval[new_column] = results.pvalues[new_column]
+                    results = model.fit(disp=False)
+                    new_pval[new_column] = results.pvalues.loc[new_column]
             else:
                 for new_column in excluded:
-                    model = sm.MNLogit(y, \
-                            sm.add_constant(pd.DataFrame(\
-                            X[included+[new_column]]))).fit(disp=False)
-                    new_pval[new_column] = model.pvalues[new_column]
+                    Xc = sm.add_constant(pd.DataFrame(X[included+[new_column]]))
+                    model   = sm.Logit(y, Xc)
+                    results = model.fit(disp=False)
+                    new_pval[new_column] = results.pvalues.loc[new_column]
             best_pval = new_pval.min()
             if best_pval < self.crit_in:
                 best_feature = new_pval.idxmin()
@@ -965,7 +975,6 @@ class stepwise(object):
     
             if not changed:
                 break
-    
         return included
 
 # **************************************************************************
@@ -978,6 +987,7 @@ class stepwise(object):
         included = list(self.xnames)
         X = self.df_copy[included]
         y = self.df_copy[self.yname]
+        warnings.filterwarnings("once", category=UserWarning)
         while True:
             changed=False
             new_pval = pd.Series(index=included)
@@ -985,11 +995,11 @@ class stepwise(object):
                 model = sm.OLS(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit()
             else:
-                model = sm.MNLogit(y, sm.add_constant(\
+                model = sm.Logit(y, sm.add_constant(\
                                 pd.DataFrame(X[included]))).fit(disp=False)
                 
             for new_column in included:
-                new_pval[new_column] = model.pvalues[new_column]
+                new_pval[new_column] = model.pvalues.loc[new_column]
             worst_pval = new_pval.max()
             if worst_pval > self.crit_out:
                 worst_feature = new_pval.idxmax()
@@ -1012,6 +1022,7 @@ class stepwise(object):
                 self.selected_ = self.forward_()
             else:
                 self.selected_ = self.backward_()
+        warnings.filterwarnings("always", category=UserWarning)
         return self.selected_
 # **************************************************************************
  

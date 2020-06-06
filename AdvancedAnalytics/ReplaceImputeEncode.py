@@ -1,8 +1,8 @@
 """
 
 @author: Edward R Jones
-@version 1.9
-@copyright 2019 - Edward R Jones, all rights reserved.
+@version 1.13
+@copyright 2020 - Edward R Jones, all rights reserved.
 """
 #from DT import DT
 import sys
@@ -26,6 +26,7 @@ class DT(Enum):
     Ordinal  = 'O' #Expected values ordered classes (class0, class1, ...)
     String   = 'S' #Expected values ("")
     ID       = 'Z' #Expected values ("")
+    Label    = 'L' #Expected values ("")
     Text     = 'T' #Expected values ("")
     Ignore   = 'Z' #Expected values ("")
     interval = 'I' #Allow lower case
@@ -33,6 +34,8 @@ class DT(Enum):
     nominal  = 'N' #Allow lower case
     ordinal  = 'O' #Allow lower case
     string   = 'S' #Allow lower case
+    id       = 'Z' #Expected values ("")
+    label    = 'L' #Expected values ("")
     text     = 'T' #Allow lower case
     ignore   = 'Z' #Allow lower case
 
@@ -44,6 +47,7 @@ class DT(Enum):
                 DT.Nominal, 
                 DT.Ordinal,
                 DT.ID, 
+                DT.Label,
                 DT.Text , 
                 DT.String,
                 DT.Ignore 
@@ -61,6 +65,10 @@ class DT(Enum):
              ctype ='DT.Ordinal'
         elif atype==DT.String:
              ctype ='DT.String'
+        elif atype==DT.ID:
+             ctype ='DT.ID'
+        elif atype==DT.Label:
+             ctype ='DT.Label'
         elif atype==DT.Text:
              ctype ='DT.Text'
         else:ctype ='DT.Ignore'
@@ -342,7 +350,7 @@ class ReplaceImputeEncode(object):
             for feature, v in self.features_map.items():
                 if nan_map.loc[i,feature]==True:
                     continue
-                if v[0]=='i' or v[0]=='I': # Interval Attribute
+                if v[0]==DT.Interval: # Interval Attribute
                     if type(v[1]) != tuple or len(v[1]) != 2:
                        raise ValueError("\n" +\
                           "***Call to ReplaceImputeEncode invalid.\n"+\
@@ -355,7 +363,7 @@ class ReplaceImputeEncode(object):
                         self.outlier_counts[feature] += 1
                         self.df_copy.loc[i,feature] = None
                 else: 
-                    if v[0]!='b' and v[0]!='n' and v[0]!='B' and v[0]!='N': 
+                    if v[0]!=DT.Binary and v[0]!=DT.Nominal: 
                         # don't touch this attribute
                         continue
                     # Categorical Attribute

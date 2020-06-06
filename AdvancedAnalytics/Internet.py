@@ -1,8 +1,8 @@
 """
 
 @author: Edward R Jones
-@version 1.9
-@copyright 2019 - Edward R Jones, all rights reserved.
+@version 1.12
+@copyright 2020 - Edward R Jones, all rights reserved.
 """
 
 import sys
