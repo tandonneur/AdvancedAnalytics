@@ -1,7 +1,7 @@
 """
 
 @author: Edward R Jones
-@version 1.13
+@version 1.14
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 #from DT import DT
@@ -13,7 +13,6 @@ from sklearn import preprocessing
 from sklearn.impute  import SimpleImputer
 from copy import deepcopy #Used to create sentiment word dictionary
 
-import re
 import pickle
 from enum import Enum
 #Class DT - DataType This is setup to provide a clean
@@ -184,21 +183,20 @@ class ReplaceImputeEncode(object):
             # Initialize data map missing and outlier counters to zero
             self.missing_counts[feature] = 0
             self.outlier_counts[feature] = 0
-            regex = re.compile("[BINTZ]", re.IGNORECASE)
-            t = v[0].value
-            if not regex.match(t):
+
+            if v[0] not in DT.getDataTypes():
                 raise TypeError(
-                  "***Data Map in call to ReplaceImputeEncode invalid. "+
-                  "***Data Type for '"+ feature + "' is invalid. "+
-                  "***Should be DT.Interval, DT.Binary, DT.Nominal, "+
+                  "\n***Data Map in call to ReplaceImputeEncode invalid.\n"+
+                  "***Data Type for '"+ feature + "' is not recognized. "+
+                  "\n***Valid types are: DT.Interval, DT.Binary, DT.Nominal, "+
                   "DT.Text, DT.String, DT.ID, or DT.Ignore")
-            if t=='I':
+            if v[0]==DT.Interval:
                 self.interval_attributes.append(feature)
             else:
-                if t=='B' :
+                if v[0]==DT.Binary:
                     self.binary_attributes.append(feature)
                 else:
-                    if t!='B' and t!='N': 
+                    if v[0]!=DT.Binary and v[0]!=DT.Nominal: 
                         # Ignore, don't touch this attribute
                         continue
                     # Attribute must be Nominal
@@ -206,9 +204,15 @@ class ReplaceImputeEncode(object):
                     # Setup column names for Nominal encoding
                     n_cat = len(v[1])
                     self.onehot_cats.append(list(v[1]))
+                    data_type = type(v[1][n_cat-1])
+                    print(feature, data_type)
                     if self.drop == True:
                         n_cat -= 1
                     for i in range(n_cat):
+                        if type(v[1][i]) != data_type:
+                            raise TypeError(
+                              "\n***Classes invalid for--> '"+feature+"'"+
+                              "\n***Must be all numeric or strings, not both.")
                         if type(v[1][i])==int:
                             my_str = feature+str(v[1][i])
                         else:
@@ -260,7 +264,6 @@ class ReplaceImputeEncode(object):
             raise ValueError("Supplied Data Map not Dictionary or File")
             sys.exit()
             
-        regex = re.compile("[BINSTZ]", re.IGNORECASE)
         self.interval_attributes = []
         self.nominal_attributes  = []
         self.binary_attributes   = []
@@ -268,20 +271,19 @@ class ReplaceImputeEncode(object):
         self.onehot_cats         = []
         self.hot_drop_list       = []
         for feature,v in self.features_map.items():
-            t=v[0].value
-            if not (regex.match(t)):
-                raise RuntimeError( 
-                  "***Data Map in call to ReplaceImputeEncode invalid.\n"+
-                  "***   Data Type for '"+ feature + "' is invalid.\n"+
-                  "***Should be DT.Interval, DT.Binary, DT.Nominal, "+
+            if v[0] not in DT.getDataTypes():
+                raise TypeError(
+                  "\n***Data Map in call to ReplaceImputeEncode invalid.\n"+
+                  "***Data Type for '"+ feature + "' is not recognized. "+
+                  "\n***Valid types are: DT.Interval, DT.Binary, DT.Nominal, "+
                   "DT.Text, DT.String, DT.ID, or DT.Ignore")
-            if t=='I' :
+            if v[0]==DT.Interval:
                 self.interval_attributes.append(feature)
             else:
-                if t=='B' :
+                if v[0]==DT.Binary:
                     self.binary_attributes.append(feature)
                 else:
-                    if t=='N' :
+                    if v[0]==DT.Nominal:
                         self.nominal_attributes.append(feature)
                         self.onehot_cats.append(list(v[1]))
                         for i in range(len(v[1])):
@@ -294,13 +296,13 @@ class ReplaceImputeEncode(object):
                         if self.drop==True:
                             self.hot_drop_list.append(my_str)
                     else:
-                        if t=='T' or t=='Z' or t=='S' or t=='s':
+                        if v[0] in DT.getDataTypes():
                             continue
                         else:
                         # Data Map Invalid
                             raise TypeError( 
                   "***Data Map in call to ReplaceImputeEncode invalid.\n"+
-                  "***   Data Type for '"+ feature + "' invalid")
+                  "***Data Type for '"+ feature + "' invalid")
                         sys.exit()
         self.n_interval = len(self.interval_attributes)
         self.n_binary   = len(self.binary_attributes)
@@ -333,7 +335,8 @@ class ReplaceImputeEncode(object):
         self.feature_names = np.array(df.columns.values)
         for feature in self.feature_names:
             if self.initial_missing[feature]>(self.n_obs/2):
-                warnings.warn(feature+":has more than 50% missing.")
+                warnings.warn(feature+":has more than 50% missing." +
+                              "Recommend setting Data Type set to DT.Ignore.")
         # Initialize number missing in attribute_map
         for feature,v in self.features_map.items():
             try:
@@ -690,9 +693,9 @@ class ReplaceImputeEncode(object):
         if self.n_binary == 0 or self.binary_encoding == None:
             return
         if self.binary_encoding == 'SAS':
-            low = -1.0
+            low = -1
         else:  # One-hot encoding
-            low = 0.0
+            low = 0
         for j in range(self.n_binary):
             k = self.imputed_binary_data[0:,j].argmin()
             smallest = self.imputed_binary_data[k,j]
@@ -816,8 +819,12 @@ class ReplaceImputeEncode(object):
                 self.encoded_data_df[feature] = \
                     self.encoded_data_df[feature].astype('int')
             elif feature in self.binary_attributes:
-                self.encoded_data_df[feature] = \
-                    self.encoded_data_df[feature].astype(\
+                if self.binary_encoding != None:
+                    self.encoded_data_df[feature] = \
+                        self.encoded_data_df[feature].astype('int')
+                else:
+                    self.encoded_data_df[feature] = \
+                        self.encoded_data_df[feature].astype(\
                                         self.df_copy[feature].dtype)
             else:
                 self.encoded_data_df[feature] = \

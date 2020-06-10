@@ -1,7 +1,7 @@
 
 """
 @author: Edward R Jones
-@version 1.12
+@version 1.14
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 

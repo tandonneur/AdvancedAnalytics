@@ -3,7 +3,7 @@
 """
 
 @author: Edward R Jones
-@version 1.13
+@version 1.14
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 
@@ -278,10 +278,10 @@ class logreg(object):
         print("{:.<27s}{:10.4f}".format('Precision', pre))
         if (TP+FN)>0:
             tpr = TP/(TP+FN)
-        print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
+        print("{:.<27s}{:10.4f}".format('Sensitivity (Recall)', tpr))
         if (TN+FP)>0:
             tnr = TN/(TN+FP)
-        print("{:.<27s}{:10.4f}".format('Recall (Specificity)', tnr))
+        print("{:.<27s}{:10.4f}".format('Specificity (Selectivity)', tnr))
         if (2*TP+FP+FN)>0:
             f1 = 2*TP/(2*TP + FP + FN)
         print("{:.<27s}{:10.4f}".format('F1-Score', f1))
