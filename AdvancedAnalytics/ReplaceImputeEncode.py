@@ -205,7 +205,6 @@ class ReplaceImputeEncode(object):
                     n_cat = len(v[1])
                     self.onehot_cats.append(list(v[1]))
                     data_type = type(v[1][n_cat-1])
-                    print(feature, data_type)
                     if self.drop == True:
                         n_cat -= 1
                     for i in range(n_cat):
