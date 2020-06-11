@@ -1,7 +1,7 @@
 
 """
 @author: Edward R Jones
-@version 1.14
+@version 1.16
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 
@@ -671,11 +671,11 @@ class tree_classifier(object):
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', classes_[i]), 
+                print(fstr1.format('Class ', classes_[i]), 
                       end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', classes_[i]), 
+                print(fstr2.format('Class ', classes_[i]), 
                       end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
