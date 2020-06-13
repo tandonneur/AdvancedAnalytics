@@ -255,15 +255,18 @@ class tree_classifier(object):
             acc = accuracy_score(y, predictions)
             print("{:.<27s}{:10.4f}".format('Accuracy', acc))
             if type(numpy_y[0]) == str:
-                pre = precision_score(y, predictions, pos_label=classes_[1])
-                tpr = recall_score(y, predictions, pos_label=classes_[1])
-                f1  =  f1_score(y,predictions, pos_label=classes_[1])
+                pre  = precision_score(y, predictions, pos_label=classes_[1])
+                tpr  = recall_score(y, predictions, pos_label=classes_[1])
+                tpr0 = recall_score(y, predictions, pos_label=classes_[0])
+                f1   =  f1_score(y,predictions, pos_label=classes_[1])
             else:
-                pre = precision_score(y, predictions)
-                tpr = recall_score(y, predictions)
-                f1 =  f1_score(y,predictions)
+                pre  = precision_score(y, predictions)
+                tpr  = recall_score(y, predictions)
+                tpr0 = recall_score(y, predictions, pos_label=0)
+                f1   =  f1_score(y,predictions)
             print("{:.<27s}{:10.4f}".format('Precision', pre))
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
+            print("{:.<27s}{:10.4f}".format('Specificity', tpr0))
             print("{:.<27s}{:10.4f}".format('F1-Score', f1))
             print("{:.<27s}{:10d}".format(\
                     'Total Misclassifications', tmisc))
@@ -378,19 +381,24 @@ class tree_classifier(object):
             print("\n\n     Confusion")
             print("       Matrix    ", end="")
             
+            fstr1 = "{:>7s}{:<3.0f}"
             if type(dt.classes_[0]) == str:
-                fstr1 = "{:>7s}{:<3s}"
-                fstr2 = "{:s}{:.<6s}"
+                fstr2 = "{:.<15s}"
             else:
-                fstr1 = "{:>7s}{:<3.0f}"
                 fstr2 = "{:s}{:.<6.0f}"
             for i in range(n_classes):
-                print(fstr1.format('Class ', dt.classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr1.format('Class ', i), end="")
+                else:
+                    print(fstr1.format('Class ', dt.classes_[i]), end="")
+                    
             print("")
             for i in range(n_classes):
-                print(fstr2.format('Class ', dt.classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
+                else:
+                    print(fstr2.format('Class ', dt.classes_[i]), end="")
+                    
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat[i][j]), end="")
                 print("")
@@ -459,6 +467,9 @@ class tree_classifier(object):
                 pre_v = precision_score(yv, predict_v, pos_label=classes_[1])
                 tpr_v = recall_score(yv, predict_v, pos_label=classes_[1])
                 f1_v  = f1_score(yv,predict_v, pos_label=classes_[1])
+                
+                tpr0_t = recall_score(yt, predict_t, pos_label=classes_[0])
+                tpr0_v = recall_score(yv, predict_v, pos_label=classes_[0])
             else:
                 pre_t = precision_score(yt, predict_t)
                 tpr_t = recall_score(yt, predict_t)
@@ -466,10 +477,14 @@ class tree_classifier(object):
                 pre_v = precision_score(yv, predict_v)
                 tpr_v = recall_score(yv, predict_v)
                 f1_v  = f1_score(yv,predict_v)
+                tpr0_t = recall_score(yt, predict_t, pos_label=0)
+                tpr0_v = recall_score(yv, predict_v,  pos_label=0)
                 
             print("{:.<27s}{:11.4f}{:15.4f}".format('Precision', pre_t, pre_v))
             print("{:.<27s}{:11.4f}{:15.4f}".format('Recall (Sensitivity)', 
                   tpr_t, tpr_v))
+            print("{:.<27s}{:11.4f}{:15.4f}".format('Specificity', 
+                  tpr0_t, tpr0_v))
             print("{:.<27s}{:11.4f}{:15.4f}".format('F1-score', f1_t, f1_v))
             misct_ = conf_matt[0][1]+conf_matt[1][0]
             miscv_ = conf_matv[0][1]+conf_matv[1][0]
@@ -636,9 +651,13 @@ class tree_classifier(object):
             print("{:.<27s}{:10.1f}{:s}{:14.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_t, '%', misc_v, '%'))
             
-            fstr0="{:s}{:.<16s}{:>10.1f}{:<1s}{:>14.1f}{:<1s}"
-            fstr1="{:>7s}{:<3s}"
-            fstr2="{:s}{:.<6s}"
+            fstr0="{:s}{:.<16s}{:>10.1f}{:<1s}{:>14.1f}{:<1s}"         
+            fstr1 = "{:>7s}{:<3.0f}"
+            if type(dt.classes_[0]) == str:
+                fstr2 = "{:.<15s}"
+            else:
+                fstr2 = "{:s}{:.<6.0f}"
+                
             classes_ = []
             if type(dt.classes_[0])==str:
                 classes_ = dt.classes_
@@ -654,31 +673,46 @@ class tree_classifier(object):
     
             print("\n\nTraining")
             print("Confusion Matrix ", end="")
+            
             for i in range(n_classes):
-                print(fstr1.format('Class ', classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr1.format('Class ', i), end="")
+                else:
+                    print(fstr1.format('Class ', dt.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                print(fstr2.format('Class ', classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
+                else:
+                    print(fstr2.format('Class ', dt.classes_[i]), end="")
+                    
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_t[i][j]), end="")
                 print("")
-                
+            print("")
+
             ct = classification_report(yt, predict_t, target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
+            
             for i in range(n_classes):
-                print(fstr1.format('Class ', classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr1.format('Class ', i), end="")
+                else:
+                    print(fstr1.format('Class ', dt.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                print(fstr2.format('Class ', classes_[i]), 
-                      end="")
+                if type(dt.classes_[0]) == str:
+                    print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
+                else:
+                    print(fstr2.format('Class ', dt.classes_[i]), end="")
+                    
                 for j in range(n_classes):
-                    print("{:>10d}".format(conf_mat_v[i][j]), end="")
+                    print("{:>10d}".format(conf_mat_t[i][j]), end="")
                 print("")
+            print("")
+
             cv = classification_report(yv, predict_v, target_names)
             print("\nValidation \nMetrics:\n",cv)

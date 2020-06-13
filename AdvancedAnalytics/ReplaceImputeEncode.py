@@ -115,7 +115,7 @@ class ReplaceImputeEncode
 class ReplaceImputeEncode(object):
     def __init__(self, data_map=None, binary_encoding=None,
                nominal_encoding=None, interval_scale=None, no_impute=None, 
-               drop=False, display=False): 
+               no_encode=None, drop=False, display=False): 
         if interval_scale=='None' or interval_scale=='none':
             self.interval_scale=None
         else:
@@ -126,6 +126,7 @@ class ReplaceImputeEncode(object):
         self.display = display
         self.interval_scale = interval_scale
         self.no_impute = no_impute
+        self.no_encode = no_encode
         if binary_encoding=='None' or binary_encoding=='none':
             self.binary_encoding = None
         else:
@@ -664,6 +665,7 @@ class ReplaceImputeEncode(object):
                 pd.DataFrame(self.data_imputed, columns=col)
             
     def scale_encode(self):
+
         self.standardize_interval()
         self.encode_binary()
         self.encode_nominal()
@@ -826,8 +828,13 @@ class ReplaceImputeEncode(object):
                         self.encoded_data_df[feature].astype(\
                                         self.df_copy[feature].dtype)
             else:
-                self.encoded_data_df[feature] = \
-                    self.encoded_data_df[feature].astype('O')
+                if type(self.encoded_data_df[feature]) == int:
+                    self.encoded_data_df[feature] = \
+                        self.encoded_data_df[feature].astype('int')
+                else: 
+                    self.encoded_data_df[feature] = \
+                        self.encoded_data_df[feature].astype(\
+                                        self.df_copy[feature].dtype)
             n = self.encoded_data_df[feature].value_counts()
             if len(n)==1:
                 print("WARNING:  Data for ", feature, " is constant.")
