@@ -710,7 +710,7 @@ class tree_classifier(object):
                     print(fstr2.format('Class ', dt.classes_[i]), end="")
                     
                 for j in range(n_classes):
-                    print("{:>10d}".format(conf_mat_t[i][j]), end="")
+                    print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
             print("")
 
