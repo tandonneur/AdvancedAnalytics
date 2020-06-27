@@ -8,6 +8,9 @@ import sys
 import numpy  as np
 from math import sqrt
 
+import matplotlib.pyplot as plt
+
+from keras.utils.layer_utils import count_params
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.metrics import median_absolute_error, r2_score
 from sklearn.metrics import accuracy_score, precision_score, recall_score
@@ -112,17 +115,6 @@ class nn_regressor(object):
 class nn_classifier(object): 
     def display_metrics(nn, X, y):
         if len(nn.classes_) <= 2: #BINARY METRICS
-            try:
-                if len(nn.classes_) != 2:
-                    raise RuntimeError("  Call to display_binary_metrics invalid"+\
-                      "  Target does not have two classes.\n  If target is "+\
-                      "nominal, use display_nominal_metrics instead.")
-                    sys.exit()
-            except:
-                raise RuntimeError("  Call to display_binary_metrics invalid"+\
-                      "  Target does not have two classes.\n  If target is "+\
-                      "nominal, use display_nominal_metrics instead.")
-                sys.exit()
             numpy_y = np.ravel(y)
             if type(numpy_y[0])==str:
                 classes_ = nn.classes_
@@ -215,31 +207,11 @@ class nn_classifier(object):
             n_classes = len(nn.classes_)
             n_obs = y.shape[0]
             if n_classes < 2:
-                raise RuntimeError("\n  Call to display_nominal_metrics invalid"+\
-                        "\n  Target does not appear to be nominal.\n"+\
-                        "  Try using NeuralNetwork.display_binary_metrics()"+\
-                        " instead.\n")
+                raise RuntimeError("\n  Call to display_metrics invalid"+\
+                        "\n  Target does not appear to be nominal.\n")
                 sys.exit()
             predict_ = nn.predict(X)
-            """
-            if len(predict_.shape) !=2:
-                raise RuntimeError("\n  Call to display_nominal_metrics invalid"+\
-                   "\n  Appears the target is not"+\
-                   " encoded into multiple binary columns\n" + \
-                   "  Try using ReplaceImputeEncode to encode target\n")
-                sys.exit()
-            """
             prob_ = nn.predict_proba(X)
-            """
-            for i in range(n_obs):
-                max_prob   = 0
-                prediction = 0
-                for j in range(n_classes):
-                    if prob_[i,j]>max_prob:
-                        max_prob = prob_[i,j]
-                        prediction = j
-                predict_[i,prediction] = 1
-            """
             ase_sum  = 0
             mase_sum = 0
             misc_ = 0
@@ -350,14 +322,12 @@ class nn_classifier(object):
         if len(nn.classes_) <=2:
             try:
                 if len(nn.classes_) != 2:
-                    raise RuntimeError("  Call to display_binary_split_metrics "+\
-                      "invalid.\n  Target does not have two classes.\n  If "+\
-                      "target is nominal, use display_nominal_metrics instead.")
+                    raise RuntimeError("  Call to display_split_metrics "+\
+                      "invalid.\n  Target does not have two classes.\n")
                     sys.exit()
             except:
-                raise RuntimeError("  Call to display_binary_split_metrics "+\
-                      "invalid.\n  Target does not have two classes.\n  If "+\
-                      "target is nominal, use display_nominal_metrics instead.")
+                raise RuntimeError("  Call to display_split_metrics "+\
+                      "invalid.\n  Target does not have two classes.\n")
                 sys.exit()
             if type(nn.classes_[0])==np.str_:
                 classes_ = nn.classes_
@@ -495,21 +465,20 @@ class nn_classifier(object):
         else:
             try:
                 if len(nn.classes_) == 2:
-                    raise RuntimeError("  Call to display_nominal_split_metrics "+\
-                      "invalid.\n  Target is Binary.  "+\
-                      "Use display_binary_split_metrics.\n")
+                    raise RuntimeError("  Call to display_split_metrics "+\
+                      "invalid.\n  Target is Binary.")
                     sys.exit()
             except:
-                raise RuntimeError("  Call to display_nominal_split_metrics "+\
+                raise RuntimeError("  Call to display_split_metrics "+\
                       "invalid.\n  Target is Binary.\n")
                 
             try:        
                 if len(nn.classes_) < 3:
-                    raise RuntimeError("  Call to display_nominal_split_metrics "+\
+                    raise RuntimeError("  Call to display_split_metrics "+\
                       "invalid.\n  Target has less than three classes.\n")
                     sys.exit()
             except:
-                raise RuntimeError("  Call to display_nominal_split_metrics "+\
+                raise RuntimeError("  Call to display_split_metrics "+\
                       "invalid.\n  Target has less than three classes.\n")
                 sys.exit()
             np_yt = np.ravel(yt)
@@ -678,12 +647,247 @@ class nn_classifier(object):
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                print("{:>7s}{:<3.0f}".format('Class ', classes_[i]), end="")
+                print(fstr1.format('Class ', classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                print("{:s}{:.<6.0f}".format('Class ', classes_[i]), end="")
+                print(fstr2.format('Class ', classes_[i]), end="")
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
             cv = classification_report(yv, predict_v, target_names)
             print("\nValidation \nMetrics:\n",cv)
+            
+class nn_keras(object):
+    
+    def accuracy_plot(history_dic):
+        loss_values     = history_dic['loss']
+        val_loss_values = history_dic["val_loss"]
+        acc_values      = history_dic['acc']
+        val_acc_values  = history_dic['val_acc']
+        
+        epochs          = range(1, len(val_loss_values) + 1)
+        plt.subplot(211)
+        plt.plot(epochs, loss_values,    'ro', label='Training Loss')
+        plt.plot(epochs, val_loss_values, 'b', label='Validation Loss')
+        plt.title("Loss vs. Accuracy")
+        plt.ylabel("Loss")
+        plt.legend()
+        
+        plt.subplot(212)
+        plt.plot(epochs, acc_values,    'ro', label='Training Accuracy')
+        plt.plot(epochs, val_acc_values, 'b', label='Validation Accuracy')
+        plt.xlabel("Epoch")
+        plt.ylabel("Accuracy")
+        plt.legend()
+        plt.show()
+        
+    def display_metrics(nn, X, y):
+        if (len(y.shape) == 1 or y.shape[1]==1) \
+                             and len(np.unique(y)) == 2: #BINARY METRICS
+            numpy_y  = np.ravel(y)
+            classes_ = np.unique(y)
+            if type(numpy_y[0])!=str:
+                classes_ = [str(int(classes_[0])), str(int(classes_[1]))]
+            z = np.zeros(len(y))
+            predictions = (nn.predict(X)>0.5).astype('int32')
+            conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
+            tmisc = conf_mat[0][1]+conf_mat[1][0]
+            misc = 100*(tmisc)/(len(y))
+            for i in range(len(y)):
+                if numpy_y[i] == 1:
+                    z[i] = 1
+            probability = nn.predict_proba(X) # get binary probabilities
+            #Calculate number of weights
+            n_weights  = count_params(nn.trainable_weights)
+            n_layers_  = len(nn.layers)
+            n_outputs_ = len(classes_)
+            
+            print("\nModel Metrics")
+            print("{:.<27s}{:10d}".format('Observations', X.shape[0]))
+            print("{:.<27s}{:10d}".format('Features', X.shape[1]))
+            print("{:.<27s}{:10d}".format('Hidden Layers',\
+                                           n_layers_-1))
+            print("{:.<27s}{:10d}".format('Outputs', \
+                                           n_outputs_-1))
+                
+            n_neurons = 0
+            config_dic = model.get_config()
+            l   = 0
+            for dic in config_dic['layers']:
+                if dic['class_name'] == 'Dense':
+                    n_neurons += dic['config']['units']
+                    if l == n_layers_-2:
+                        hl_activation = dic['config']['activation']
+                    if l == n_layers_-1:
+                        out_activation = dic['config']['activation']
+                    l += 1
+
+            print("{:.<27s}{:10d}".format('Neurons',\
+                                  n_neurons))
+            print("{:.<27s}{:10d}".format('Weights', \
+                                 n_weights))
+            print("{:.<27s}{:>10s}".format('Hidden Layer Activation', \
+                                 hl_activation))
+            print("{:.<27s}{:>10s}".format('Output Layer Activation', \
+                                 out_activation))
+            print("{:.<27s}{:10.4f}".format('Mean Absolute Error', \
+                          mean_absolute_error(z,probability[:, 0])))
+            print("{:.<27s}{:10.4f}".format('Avg Squared Error', \
+                          mean_squared_error(z,probability[:, 0])))
+            acc = accuracy_score(y, predictions)
+            print("{:.<27s}{:10.4f}".format('Accuracy', acc))
+                
+            if type(numpy_y[0]) == str:
+                pre = precision_score(y, predictions, pos_label=classes_[1])
+                tpr = recall_score(y, predictions,    pos_label=classes_[1])
+                f1  =  f1_score(y,predictions,        pos_label=classes_[1])
+                pre = precision_score(y, predictions, pos_label=classes_[1])
+                tpr = recall_score(y, predictions,    pos_label=classes_[1])
+                f1 =  f1_score(y,predictions,         pos_label=classes_[1])
+            else:
+                pre = precision_score(y, predictions)
+                tpr = recall_score(y, predictions)
+                f1  = f1_score(y,predictions)
+                pre = precision_score(y, predictions)
+                tpr = recall_score(y, predictions)
+                f1 =  f1_score(y,predictions)
+                
+            print("{:.<27s}{:10.4f}".format('Precision', pre))
+            print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
+            print("{:.<27s}{:10.4f}".format('F1-Score', f1))
+            print("{:.<27s}{:10d}".format(\
+                    'Total Misclassifications', tmisc))
+            print("{:.<27s}{:9.1f}{:s}".format(\
+                    'MISC (Misclassification)', misc, '%'))
+            n_    = [conf_mat[0][0]+conf_mat[0][1], conf_mat[1][0]+conf_mat[1][1]]
+            miscc = [100*conf_mat[0][1]/n_[0], 100*conf_mat[1][0]/n_[1]]
+            for i in range(2):
+                print("{:s}{:<16s}{:>9.1f}{:<1s}".format(\
+                      '     class ', classes_[i], miscc[i], '%'))
+            print("\n\n     Confusion     Class     Class")
+            print("       Matrix", end="")
+            print("{:1s}{:>10s}{:>10s}".format(" ", classes_[0], classes_[1]))
+            
+            for i in range(2):
+                print("{:s}{:.<6s}".format('  Class ', classes_[i]), end="")
+                for j in range(2):
+                    print("{:>10d}".format(conf_mat[i][j]), end="")
+                print("")
+            print("")
+        else: #NOMINAL METRICS
+            n_classes = y.shape[1]
+            n_obs     = y.shape[0]
+            if n_classes < 2:
+                raise RuntimeError("\n  Call to display_metrics invalid"+\
+                        "\n  Target does not appear to be nominal.\n")
+                sys.exit()
+            prob_    = nn.predict(X)
+            predict_ = np.argmax(prob_, axis=-1)
+            y_       = np.argmax(y, axis=-1)
+            classes_ = np.unique(y_)
+            
+            #Calculate number of weights
+            n_weights  = count_params(nn.trainable_weights)
+            n_layers_  = len(nn.layers)
+            n_outputs_ = n_classes
+            ase_sum  = 0
+            mase_sum = 0
+            misc_ = 0
+            misc  = [0]*n_classes
+            n_    = [0]*n_classes
+            conf_mat = []
+            for i in range(n_classes):
+                conf_mat.append(np.zeros(n_classes))
+
+            for i in range(n_obs):
+                for j in range(n_classes):
+                    if y[i][j] == 1:
+                        ase_sum  += (1-prob_[i,j])*(1-prob_[i,j])
+                        mase_sum +=  1-prob_[i,j]
+                        idx = j
+                        n_[j] += 1
+                    else:
+                        ase_sum  += prob_[i,j]*prob_[i,j]
+                        mase_sum += prob_[i,j]
+                j = predict_[i]
+                conf_mat[idx][j] += 1
+                if j != idx:
+                    misc_     += 1
+                    misc[idx] += 1
+            tmisc = misc_
+            misc_ = 100*misc_/n_obs
+            ase   = ase_sum/(n_classes*n_obs)
+            mase  = mase_sum/(n_classes*n_obs)
+        
+            print("\nModel Metrics")
+            print("{:.<27s}{:10d}".format('Observations', X.shape[0]))
+            print("{:.<27s}{:10d}".format('Features',     X.shape[1]))
+            print("{:.<27s}{:10d}".format('Hidden Layers', n_layers_-1))
+            
+            n_neurons = 0
+            config_dic = model.get_config()
+            l   = 0
+            for dic in config_dic['layers']:
+                if dic['class_name'] == 'Dense':
+                    n_neurons += dic['config']['units']
+                    if l <= n_layers_-2:
+                        hl_activation = dic['config']['activation']
+                        print("{:<24s}{:.<3d}{:10d}".format(\
+                            '   Neurons Hidden Layer ', l, 
+                            dic['config']['units']))
+                    if l == n_layers_-1:
+                        out_activation = dic['config']['activation']
+                    l += 1
+            print("{:.<27s}{:10d}".format('Outputs', \
+                                  n_outputs_))
+            print("{:.<27s}{:10d}".format('Weights', \
+                                 n_weights))
+            print("{:.<27s}{:>10s}".format('Hidden Layer Activation', \
+                                 hl_activation))
+            print("{:.<27s}{:>10s}".format('Target Activation', \
+                                 out_activation))
+            print("{:.<27s}{:10.4f}".format('Avg Squared Error', ase))
+            print("{:.<27s}{:10.4f}".format('Root ASE', sqrt(ase)))
+            print("{:.<27s}{:10.4f}".format('Mean Absolute Error', mase))
+            acc = accuracy_score(y_, predict_)
+            print("{:.<27s}{:10.4f}".format('Accuracy', acc))
+            pre = precision_score(y_, predict_, average='macro')
+            print("{:.<27s}{:10.4f}".format('Precision', pre))
+            tpr = recall_score(y_, predict_, average='macro')
+            print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
+            f1 =  f1_score(y_,predict_, average='macro')
+            print("{:.<27s}{:10.4f}".format('F1-Score', f1))
+            print("{:.<27s}{:10d}".format(\
+                    'Total Misclassifications', tmisc))
+            print("{:.<27s}{:9.1f}{:s}".format(\
+                    'MISC (Misclassification)', misc_, '%'))
+            if type(classes_[0]) == str:
+                fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
+            else:
+                fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
+            for i in range(n_classes):
+                if n_[i]>0:
+                    misc[i] = 100*misc[i]/n_[i]
+                print(fstr.format(\
+                      '     class ', classes_[i], misc[i], '%'))
+            print("\n\n     Confusion")
+            print("       Matrix    ", end="")
+            
+            if type(classes_[0]) == str:
+                fstr1 = "{:>7s}{:<3s}"
+                fstr2 = "{:s}{:.<6s}"
+            else:
+                fstr1 = "{:>7s}{:<3.0f}"
+                fstr2 = "{:s}{:.<6.0f}"
+            for i in range(n_classes):
+                print(fstr1.format('Class ', classes_[i]), end="")
+            print("")
+            for i in range(n_classes):
+                print(fstr2.format('Class ', classes_[i]), end="")
+                for j in range(n_classes):
+                    print("{:>10.0f}".format(conf_mat[i][j]), end="")
+                print("")
+    
+            cr = classification_report(y_, predict_, classes_, digits=4)
+            print("\n",cr)
+            

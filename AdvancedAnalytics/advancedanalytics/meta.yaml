@@ -1,0 +1,50 @@
+{% set name = "AdvancedAnalytics" %}
+{% set version = "1.11" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: 77589fcc287c47adf2cc7a348e0b62efc4d26226109f9951d6a16205d7035ca5
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - nltk
+    - pip
+    - pydotplus
+    - python
+    - python-graphviz
+    - scikit-image
+    - scikit-learn
+    - statsmodels
+  run:
+    - nltk
+    - pydotplus
+    - python
+    - python-graphviz
+    - scikit-image
+    - scikit-learn
+    - statsmodels
+
+test:
+  imports:
+    - AdvancedAnalytics
+
+about:
+  home: "https://github.com/tandonneur/AdvancedAnalytics"
+  license: MIT
+  license_family: MIT
+  license_file: 
+  summary: "Python support for 'The Art and Science of Data Analytics'"
+  doc_url: 
+  dev_url: 
+
+extra:
+  recipe-maintainers:
+    - your-github-id-here
