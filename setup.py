@@ -10,7 +10,7 @@ with open("README.rst", "r") as f:
 
 setuptools.setup(
     name="AdvancedAnalytics", 
-    version="1.22", 
+    version="1.33", 
     author="Edward R Jones", 
     author_email="ejones@tamu.edu", 
     url="https://github.com/tandonneur/AdvancedAnalytics", 
