@@ -1,5 +1,5 @@
 {% set name = "AdvancedAnalytics" %}
-{% set version = "1.11" %}
+{% set version = "1.33" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 77589fcc287c47adf2cc7a348e0b62efc4d26226109f9951d6a16205d7035ca5
+  sha256: f95dd930ba27a86430c2f7a67f0e7a55c8460d1c123c33c646d7e9eeaf063552
 
 build:
   number: 0
@@ -19,7 +19,6 @@ requirements:
     - pip
     - pydotplus
     - python
-    - python-graphviz
     - scikit-image
     - scikit-learn
     - statsmodels
@@ -27,7 +26,6 @@ requirements:
     - nltk
     - pydotplus
     - python
-    - python-graphviz
     - scikit-image
     - scikit-learn
     - statsmodels
