@@ -711,7 +711,7 @@ class nn_keras(object):
                                            n_outputs_-1))
                 
             n_neurons = 0
-            config_dic = model.get_config()
+            config_dic = nn.get_config()
             l   = 0
             for dic in config_dic['layers']:
                 if dic['class_name'] == 'Dense':
@@ -825,7 +825,7 @@ class nn_keras(object):
             print("{:.<27s}{:10d}".format('Hidden Layers', n_layers_-1))
             
             n_neurons = 0
-            config_dic = model.get_config()
+            config_dic = nn.get_config()
             l   = 0
             for dic in config_dic['layers']:
                 if dic['class_name'] == 'Dense':

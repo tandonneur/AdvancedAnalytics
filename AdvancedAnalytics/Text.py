@@ -4,18 +4,17 @@
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 
-import sys
+import sys, random, string, re
 import warnings
 import numpy  as np
 import pandas as pd
 
-from copy import deepcopy #Used to create sentiment word dictionary
+from collections import Counter
+from copy        import deepcopy #Used to create sentiment word dictionary
 
 import matplotlib.pyplot as plt
 import matplotlib.pylab  as pylab
-import random
-import string
-import re
+
 # Install nltk using conda install nltk
 from nltk import pos_tag
 from nltk.tokenize import word_tokenize
@@ -246,6 +245,111 @@ class text_analysis(object):
                 # Show Word Cloud based dictionary with term Frequencies
                 text_plot.word_cloud_dic(topic_cloud, mask=mask, 
                                              max_words=n_terms)
+        return
+    
+    def display_term_frequency(tf, terms, n_tail=20, tfidf=None, 
+                               word_cloud=True, zipf_plot=True):
+        td = text_plot.term_dic(tf, terms, scores=None)
+        # Calculate term cdf
+        k            = Counter(td)
+        sorted_terms = k.most_common()
+        n_terms      = len(sorted_terms)
+        doc_terms    = {}
+        tfidf_score  = {}
+        for i in range(n_terms):
+            # Store term document-frequency in doc_terms
+            doc_terms[terms[i]] = tf[:,i].count_nonzero()
+        if tfidf != None:
+            for i in range(n_terms):
+                tfidf_score[terms[i]] = tfidf[:,i].sum()
+        # Display the top 20 terms
+        k          = Counter(td)
+        tail_terms = k.most_common(n_tail)
+        print("")
+        print(n_tail, "MOST COMMON TERMS")
+        if tfidf  == None:
+            print("---------------------------------------")
+            print("{:.<15s}{:>12s}{:>12s}".format('Term', 'Term Freq.', 
+                                                  'Doc Freq.'))
+            for t in tail_terms:
+                # Uset his formation when unweighted frequencies are used
+                print("{:.<15s}{:>9d}{:>12d}".format(t[0], t[1], doc_terms[t[0]]))
+            print("---------------------------------------\n")
+        else:
+            print("------------------------------------------------")
+            print("{:.<15s}{:>12s}{:>12s}{:>9s}".format('Term', 'Term Freq.', 
+                                                  'Doc Freq.', 'TFIDF'))
+            for t in tail_terms:
+                # Uset his formation when unweighted frequencies are used
+                print("{:.<15s}{:>9d}{:>12d}{:>12.1f}".format(t[0], t[1], 
+                                                             doc_terms[t[0]],
+                                                             tfidf_score[t[0]]))
+            print("------------------------------------------------\n")
+        
+        bot_terms = k.most_common()[-n_tail:]
+        print(n_tail, "LEAST COMMON TERMS")
+        if tfidf  == None:
+            print("---------------------------------------")
+            print("{:.<15s}{:>12s}{:>12s}".format('Term', 'Term Freq.', 
+                                                  'Doc Freq.'))
+            for t in bot_terms:
+                # Uset his formation when unweighted frequencies are used
+                print("{:.<15s}{:>9d}{:>12d}".format(t[0], t[1], doc_terms[t[0]]))
+            print("---------------------------------------\n")
+        else:
+            print("------------------------------------------------")
+            print("{:.<15s}{:>12s}{:>12s}{:>9s}".format('Term', 'Term Freq.', 
+                                                  'Doc Freq.', 'TFIDF'))
+            for t in bot_terms:
+                # Uset his formation when unweighted frequencies are used
+                print("{:.<15s}{:>9d}{:>12d}{:>12.1f}".format(t[0], t[1], 
+                                                             doc_terms[t[0]],
+                                                             tfidf_score[t[0]]))
+            print("------------------------------------------------\n")
+            
+        if word_cloud:
+            # Work cloud for top terms - terms with highest term frequency
+            text_plot.word_cloud_dic(td, mask=None, max_words=n_tail, 
+                                     bg_color="maroon", size=(400,200), 
+                                     random=12345)
+            print("")
+        
+        if zipf_plot==True:
+            # Standard ZIFF plot using log(term frequency) on the vertical axis
+            freq  = np.zeros(n_terms)
+            i = 0
+            for t in sorted_terms:
+                freq [i] = t[1]
+                i += 1
+            plt.figure(figsize=(9,4))
+            plt.title('Log ZIPF Plot')
+            plt.xlabel("Rank")
+            plt.ylabel("Log(Term Frequency)")
+            plt.yscale('log')
+            plt.title('Log Zipf Plot')
+            plt.grid(True)
+            ax = plt.gca()
+            ax.set_facecolor('steelblue')
+            plt.plot(freq, '-', color='gold', linewidth=3)
+            plt.show()
+            
+            x = np.zeros(n_tail).astype(str)
+            y = np.zeros(n_tail)
+            i = 0
+            for t in tail_terms:
+                x[i] = t[0]
+                y[i] = t[1]
+                i+=1
+            plt.figure(figsize=(9,4))
+            plt.title('Term Frequency for Most Common Terms')
+            plt.grid(True)
+            plt.yscale('log')
+            plt.ylabel("Log(Term Frequency)")
+            plt.xticks(rotation=45, ha='right')
+            ax = plt.gca()
+            ax.set_facecolor('steelblue')
+            plt.bar(x, y, color='gold')
+            plt.show()
         return
 
 class text_plot(object):

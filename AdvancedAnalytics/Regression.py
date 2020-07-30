@@ -353,15 +353,15 @@ class logreg(object):
                 pre  = precision_score(y, predictions, pos_label=classes_[1])
                 tpr  = recall_score(y, predictions, pos_label=classes_[1])
                 tpr0 = recall_score(y, predictions, pos_label=classes_[0])
-                f1   =  f1_score(y,predictions, pos_label=classes_[1])
+                f1   = f1_score(y, predictions, pos_label=classes_[1])
             else:
                 pre  = precision_score(y, predictions)
                 tpr  = recall_score(y, predictions)
                 tpr0 = recall_score(y, predictions,  pos_label=0)
-                f1   =  f1_score(y,predictions)
+                f1   = f1_score(y, predictions)
             print("{:.<27s}{:10.4f}".format('Precision', pre))
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
-            print("{:.<27s}{:10.4f}".format('RSpecificity', tpr0))
+            print("{:.<27s}{:10.4f}".format('Specificity', tpr0))
             print("{:.<27s}{:10.4f}".format('F1-Score', f1))
             print("{:.<27s}{:10d}".format(\
                     'Total Misclassifications', tmisc))
