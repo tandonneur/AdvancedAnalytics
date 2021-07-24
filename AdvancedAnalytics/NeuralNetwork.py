@@ -1,6 +1,6 @@
 """
 @author: Edward R Jones
-@version 1.14
+@version 1.34
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 
@@ -10,7 +10,6 @@ from math import sqrt
 
 import matplotlib.pyplot as plt
 
-from keras.utils.layer_utils import count_params
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.metrics import median_absolute_error, r2_score
 from sklearn.metrics import accuracy_score, precision_score, recall_score
@@ -658,12 +657,12 @@ class nn_classifier(object):
             print("\nValidation \nMetrics:\n",cv)
             
 class nn_keras(object):
-    
+
     def accuracy_plot(history_dic):
         loss_values     = history_dic['loss']
         val_loss_values = history_dic["val_loss"]
-        acc_values      = history_dic['acc']
-        val_acc_values  = history_dic['val_acc']
+        acc_values      = history_dic['accuracy']
+        val_acc_values  = history_dic['val_accuracy']
         
         epochs          = range(1, len(val_loss_values) + 1)
         plt.subplot(211)
@@ -688,17 +687,19 @@ class nn_keras(object):
             classes_ = np.unique(y)
             if type(numpy_y[0])!=str:
                 classes_ = [str(int(classes_[0])), str(int(classes_[1]))]
-            z = np.zeros(len(y))
+            
             predictions = (nn.predict(X)>0.5).astype('int32')
             conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
             tmisc = conf_mat[0][1]+conf_mat[1][0]
             misc = 100*(tmisc)/(len(y))
+            
+            z = np.zeros(len(y))
             for i in range(len(y)):
                 if numpy_y[i] == 1:
                     z[i] = 1
-            probability = nn.predict_proba(X) # get binary probabilities
+            probability = nn.predict(X) # get binary probabilities
             #Calculate number of weights
-            n_weights  = count_params(nn.trainable_weights)
+            n_weights  = nn.count_params()
             n_layers_  = len(nn.layers)
             n_outputs_ = len(classes_)
             
@@ -787,7 +788,7 @@ class nn_keras(object):
             classes_ = np.unique(y_)
             
             #Calculate number of weights
-            n_weights  = count_params(nn.trainable_weights)
+            n_weights  = nn.count_params()
             n_layers_  = len(nn.layers)
             n_outputs_ = n_classes
             ase_sum  = 0

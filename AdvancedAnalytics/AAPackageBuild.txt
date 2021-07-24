@@ -1,0 +1,25 @@
+After installing Anaconda, clone the base environment using:
+
+CONDA CREATE -n Stat656Win64 --clone base
+
+Then in this new environment install these packages:
+
+conda install -c dr.jones AdvancedAnalytics
+conda install -c conda-forge pydotplus
+conda install -c conda-forge wordcloud
+conda install -c conda-forge newspaper3k
+
+pip install graphviz
+pip install python-graphviz
+pip install tinysegmenter==0.3
+pip install newsapi
+pip install newsapi-python
+ --
+For nltk you also need to run the following once to load the dictionaries.
+
+nltk.download("punkt")
+nltk.download("averaged_perceptron_tagger")
+nltk.download("stopwords")
+nltk.download("wordnet")
+
+apikey = '21643c69644c4ac8b884bb673a2b54e3'

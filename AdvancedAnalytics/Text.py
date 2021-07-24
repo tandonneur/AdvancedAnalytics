@@ -1,6 +1,6 @@
 """
 @author: Edward R Jones
-@version 1.14
+@version 1.34
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 
@@ -154,9 +154,8 @@ class text_analysis(object):
             stemmed_tokens = tagged_tokens
         return stemmed_tokens
     
-    def score_topics(u, display=True):
+    def score_topics(u, scores=True, display=True):
         topics = True
-        scores = True
         if topics==False and scores==False:
             return None
         n_reviews = u.shape[0]
@@ -168,16 +167,19 @@ class text_analysis(object):
             print("Number of topics is zero")
             sys.exit()
         doc_prob  = np.array([0.0]*n_reviews, dtype=float)
-        doc_topic = np.array([0.0]*n_reviews, dtype=float)
+        doc_topic = np.array([0]*n_reviews,   dtype=int)
         for i in range(n_reviews):
-            doc_prob[i] = u[i].max()
+            doc_prob[i]  = u[i].max()
             for j in range(n_topics):
                 if u[i][j] == doc_prob[i]:
                     doc_topic[i] = j
                     continue
         z = np.asarray([doc_topic, doc_prob])
         z = z.T
-        df = pd.DataFrame(z, columns=['topic', 'prob'])
+        df_prob  = pd.DataFrame(doc_prob.T, columns=['prob'])
+        df_topic = pd.DataFrame(doc_topic.T, columns=['topic'])
+        df = df_topic.join(df_prob)
+    
         if display==True:
             df0 = df.groupby('topic').count()
             df0 = df0.rename(columns={'prob':'N'})
@@ -194,9 +196,10 @@ class text_analysis(object):
             for t in (range(n_topics)):
                 print("    {:<5d}{:>5d}{:>7.1f}%".format(t, \
                       df0['N'].iloc[t], df0['P'].iloc[t]))
-        if scores==False:
-            df = df['topic']
-        return df # ndocs x (1 or 2)
+            if scores==False:
+                return df_topic
+            else:
+                return df 
 
     def display_topics(uv, terms, n_terms=15, \
                        word_cloud=False, mask=None):
@@ -356,7 +359,7 @@ class text_plot(object):
     
     def shades_of_gray(word, font_size, position, orientation, 
                        random_state=None, **kwargs):
-        return "hsl(0, 0%%, %d%%)" % random.randint(60,1000)
+        return "hsl(0, 0%%, %d%%)" % random.randint(60,200)
     
     def word_cloud_string(s, mask=None, bg_color="maroon", 
                           stopwords=None, max_words=30, random=12345,

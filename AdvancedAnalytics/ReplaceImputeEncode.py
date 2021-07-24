@@ -1,7 +1,7 @@
 """
 
 @author: Edward R Jones
-@version 1.14
+@version 1.34
 @copyright 2020 - Edward R Jones, all rights reserved.
 """
 #from DT import DT
@@ -406,11 +406,17 @@ class ReplaceImputeEncode(object):
                   " otherwise Interval")
         
         for feature in feature_names:
-            n = df[feature].value_counts()
-            if type(df[feature].iloc[0]) != str:
+            n        = df[feature].value_counts()
+            n_values = n.index
+            astring  = False
+            for v in n_values:
+                if (type(v)==str):
+                    astring = True
+                    break
+            if astring == False:
                 min_ = round(df[feature].min()-0.5,4)
                 max_ = round(df[feature].max()+0.5,4)
-            if type(df[feature].iloc[0]) !=str:
+            if astring == False:
                 #Numerical attribute
                 if len(n) < max_n:
                     # Numerical Attribute is Binary or Nominal
@@ -449,7 +455,7 @@ class ReplaceImputeEncode(object):
                         for i in range(len(a)):
                             if type(a[i]) != str:
                                 j = i
-                        if j>0:
+                        if j>=0:
                             a = np.delete(a,j)
                         else:
                             no_nan=True
@@ -462,7 +468,7 @@ class ReplaceImputeEncode(object):
                         draft_features_map[feature]=[DT.Nominal,
                                           categories]
                 else:
-                    k = df[feature].apply(len).median()
+                    k = df[feature].str.len().max()
                     if k>100:
                         # Set attribute to text field
                         draft_features_map[feature]=[DT.Text,("")]
