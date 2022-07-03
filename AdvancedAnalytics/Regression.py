@@ -308,10 +308,6 @@ class logreg(object):
             for j in range(2):
                 print("{:>10d}".format(int(conf_mat[i][j])), end="")
             print("")
-         
-        # In the binary case, the classification report is incorrect
-        #cr = classification_report(yv, predict_v, lr.classes_)
-        #print("\n",cr)
         
     def display_metrics(lr, X, y):
         if len(lr.classes_) == 2:
@@ -382,9 +378,6 @@ class logreg(object):
                     print("{:>10d}".format(conf_mat[i][j]), end="")
                 print("")
             print("")
-             
-            # In the binary case, the classification report is incorrect
-            #cr = classification_report(yv, predict_v, lr.classes_)
             
         else:
             n_classes = len(lr.classes_)
@@ -486,7 +479,7 @@ class logreg(object):
                 print("")
             print("")
     
-            cr = classification_report(y, predict_, lr.classes_)
+            cr = classification_report(y, predict_, labels=lr.classes_)
             print("\n",cr)
         
         
@@ -602,8 +595,8 @@ class logreg(object):
                 print("")
                 
             # In the binary case, the classification report is incorrect
-            #cr = classification_report(yv, predict_v, lr.classes_)
-            #print("\n",cr)
+            cr = classification_report(yv, predict_v, labels=lr.classes_)
+            print("\n",cr)
    
         else:
             n_classes = len(lr.classes_)
@@ -768,7 +761,7 @@ class logreg(object):
                 print("")
             print("")
                 
-            ct = classification_report(yt, predict_t, target_names)
+            ct = classification_report(yt, predict_t, labels=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
@@ -789,7 +782,7 @@ class logreg(object):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
             print("")
-            cv = classification_report(yv, predict_v, target_names)
+            cv = classification_report(yv, predict_v, labels=target_names)
             print("\nValidation \nMetrics:\n",cv)
     
      

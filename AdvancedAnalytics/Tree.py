@@ -404,7 +404,7 @@ class tree_classifier(object):
                 print("")
             print("")
             
-            cr = classification_report(np_y, predictions, dt.classes_)
+            cr = classification_report(np_y, predictions, labels=dt.classes_)
             print("\n",cr)
         
     def display_split_metrics(dt, Xt, yt, Xv, yv, target_names = None):
@@ -525,8 +525,8 @@ class tree_classifier(object):
                     print("{:>10d}".format(conf_matv[i][j]), end="")
                 print("")
             # In the binary case, the classification report is incorrect
-            #cr = classification_report(yv, predict_v, dt.classes_)
-            #print("\n",cr)
+            cr = classification_report(yv, predict_v, labels=dt.classes_)
+            print("\n",cr)
         else:
             try:
                 if len(dt.classes_) < 2:
@@ -691,7 +691,7 @@ class tree_classifier(object):
                 print("")
             print("")
 
-            ct = classification_report(yt, predict_t, target_names)
+            ct = classification_report(yt, predict_t, labels=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
@@ -714,5 +714,5 @@ class tree_classifier(object):
                 print("")
             print("")
 
-            cv = classification_report(yv, predict_v, target_names)
+            cv = classification_report(yv, predict_v, labels=target_names)
             print("\nValidation \nMetrics:\n",cv)

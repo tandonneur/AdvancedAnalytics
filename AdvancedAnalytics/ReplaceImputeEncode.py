@@ -1,5 +1,4 @@
 """
-
 @author: Edward R Jones
 @version 1.34
 @copyright 2020 - Edward R Jones, all rights reserved.
@@ -159,7 +158,7 @@ class ReplaceImputeEncode(object):
             print("Attributes Map is required.")
             print("Please pass map using data_map attribute.")
             print("If one is not available, try creating one using "+
-                  "call to draft_features_map(df)")
+                  "call to draft_data_map(df)")
             return
         if type(data_map)==str:
             try:
@@ -440,7 +439,7 @@ class ReplaceImputeEncode(object):
                                           categories]
                 else:
                     # Attribute is Interval
-                    draft_features_map[feature]=[DT.Interval,
+                    draft_features_map[feature]=["DT.Interval",
                                       (min_, max_)]
 
             else:

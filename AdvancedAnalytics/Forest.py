@@ -404,7 +404,7 @@ class forest_classifier(object):
                 print("")
             print("")
             
-            cr = classification_report(np_y, predictions, rf.classes_)
+            cr = classification_report(np_y, predictions, labels=rf.classes_)
             print("\n",cr)
         
     def display_split_metrics(rf, Xt, yt, Xv, yv, target_names = None):
@@ -523,8 +523,8 @@ class forest_classifier(object):
                     print("{:>10d}".format(conf_matv[i][j]), end="")
                 print("")
             # In the binary case, the classification report is incorrect
-            #cr = classification_report(yv, predict_v, rf.classes_)
-            #print("\n",cr)
+            cr = classification_report(yv, predict_v, labels=rf.classes_)
+            print("\n",cr)
         else:
             try:
                 if len(rf.classes_) < 2:
@@ -688,7 +688,7 @@ class forest_classifier(object):
                 print("")
             print("")
                 
-            ct = classification_report(yt, predict_t, target_names)
+            ct = classification_report(yt, predict_t, labels=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
@@ -709,5 +709,5 @@ class forest_classifier(object):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
             print("")
-            cv = classification_report(yv, predict_v, target_names)
+            cv = classification_report(yv, predict_v, labels=target_names)
             print("\nValidation \nMetrics:\n",cv)

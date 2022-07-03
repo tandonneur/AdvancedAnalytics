@@ -314,7 +314,7 @@ class nn_classifier(object):
                     print("{:>10.0f}".format(conf_mat[i][j]), end="")
                 print("")
     
-            cr = classification_report(y_, predict_, nn.classes_)
+            cr = classification_report(y_, predict_, labels=nn.classes_)
             print("\n",cr)
         
     def display_split_metrics(nn, Xt, yt, Xv, yv, target_names=None):
@@ -446,8 +446,8 @@ class nn_classifier(object):
                     print("{:>10d}".format(conf_matt[i][j]), end="")
                 print("")
             # In the binary case, the classification report is incorrect
-            #cr = classification_report(yv, predict_v, nn.classes_)
-            #print("\n",cr)
+            cr = classification_report(yv, predict_v, labels=nn.classes_)
+            print("\n",cr)
             
             print("\n\nValidation                Class     Class")
             print("{:<21s}{:>10s}{:>10s}".format("Confusion Matrix", 
@@ -640,7 +640,7 @@ class nn_classifier(object):
                     print("{:>10d}".format(conf_mat_t[i][j]), end="")
                 print("")
                 
-            ct = classification_report(yt, predict_t, target_names)
+            ct = classification_report(yt, predict_t, labels=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
@@ -653,7 +653,7 @@ class nn_classifier(object):
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
-            cv = classification_report(yv, predict_v, target_names)
+            cv = classification_report(yv, predict_v, labels=target_names)
             print("\nValidation \nMetrics:\n",cv)
             
 class nn_keras(object):
@@ -889,6 +889,6 @@ class nn_keras(object):
                     print("{:>10.0f}".format(conf_mat[i][j]), end="")
                 print("")
     
-            cr = classification_report(y_, predict_, classes_, digits=4)
+            cr = classification_report(y_, predict_, labels=classes_, digits=4)
             print("\n",cr)
             
