@@ -21,5 +21,3 @@ nltk.download("punkt")
 nltk.download("averaged_perceptron_tagger")
 nltk.download("stopwords")
 nltk.download("wordnet")
-
-apikey = '21643c69644c4ac8b884bb673a2b54e3'

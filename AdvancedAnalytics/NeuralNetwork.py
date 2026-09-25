@@ -6,6 +6,7 @@
 
 import sys
 import numpy  as np
+import pandas as pd
 from math import sqrt
 
 import matplotlib.pyplot as plt
@@ -15,6 +16,14 @@ from sklearn.metrics import median_absolute_error, r2_score
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import f1_score, confusion_matrix, classification_report 
 from sklearn.neural_network import MLPClassifier
+
+def _indicator(y, classes):
+    # Nominal metrics below index targets by column; convert 1-D labels
+    # to a one-hot array whose columns follow classes
+    if isinstance(y, pd.DataFrame) or np.ndim(y) > 1:
+        return y
+    y = np.ravel(y)
+    return (y[:, None] == np.asarray(classes)[None, :]).astype(int)
 
 class nn_regressor(object):
             
@@ -33,13 +42,8 @@ class nn_regressor(object):
                               nn.n_layers_-2))
         print("{:.<23s}{:15d}".format('Outputs', \
                               nn.n_outputs_))
-        n_neurons = 0
         nl = nn.n_layers_-2
-        if nl>1:
-            for i in range(nl):
-                n_neurons += nn.hidden_layer_sizes[i]
-        else:
-            n_neurons = nn.hidden_layer_sizes
+        n_neurons = sum(nn.coefs_[i].shape[1] for i in range(nl))
         print("{:.<23s}{:15d}".format('Neurons',\
                               n_neurons))
         print("{:.<23s}{:15d}".format('Weights', \
@@ -77,13 +81,8 @@ class nn_regressor(object):
                                           Xt.shape[1], Xv.shape[1]))
         print("{:.<23s}{:15d}{:15d}".format('Hidden Layers',\
                               (nn.n_layers_-2),(nn.n_layers_-2)))
-        n_neurons = 0
         nl = nn.n_layers_-2
-        if nl>1:
-            for i in range(nl):
-                n_neurons += nn.hidden_layer_sizes[i]
-        else:
-            n_neurons = nn.hidden_layer_sizes
+        n_neurons = sum(nn.coefs_[i].shape[1] for i in range(nl))
         print("{:.<23s}{:15d}{:15d}".format('Neurons',\
                               n_neurons, n_neurons))
         print("{:.<23s}{:15d}{:15d}".format('Outputs', \
@@ -115,17 +114,18 @@ class nn_classifier(object):
     def display_metrics(nn, X, y):
         if len(nn.classes_) <= 2: #BINARY METRICS
             numpy_y = np.ravel(y)
-            if type(numpy_y[0])==str:
+            if isinstance(numpy_y[0], str):
                 classes_ = nn.classes_
             else:
                 classes_ = [str(int(nn.classes_[0])), str(int(nn.classes_[1]))]
             z = np.zeros(len(y))
             predictions = nn.predict(X) # get binary class predictions
-            conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
+            conf_mat = confusion_matrix(y_true=y, y_pred=predictions,
+                                        labels=nn.classes_)
             tmisc = conf_mat[0][1]+conf_mat[1][0]
             misc = 100*(tmisc)/(len(y))
             for i in range(len(y)):
-                if numpy_y[i] == 1:
+                if numpy_y[i] == nn.classes_[1]:
                     z[i] = 1
             probability = nn.predict_proba(X) # get binary probabilities
             #Calculate number of weights
@@ -141,13 +141,8 @@ class nn_classifier(object):
                                   nn.n_layers_-2))
             print("{:.<27s}{:10d}".format('Outputs', \
                                   nn.n_outputs_))
-            n_neurons = 0
             nl = nn.n_layers_-2
-            if nl>1:
-                for i in range(nl):
-                    n_neurons += nn.hidden_layer_sizes[i]
-            else:
-                n_neurons = nn.hidden_layer_sizes
+            n_neurons = sum(nn.coefs_[i].shape[1] for i in range(nl))
             print("{:.<27s}{:10d}".format('Neurons',\
                                   n_neurons))
             print("{:.<27s}{:10d}".format('Weights', \
@@ -166,20 +161,9 @@ class nn_classifier(object):
                           mean_squared_error(z,probability[:, 1])))
             acc = accuracy_score(y, predictions)
             print("{:.<27s}{:10.4f}".format('Accuracy', acc))
-            if type(numpy_y[0]) == str:
-                pre = precision_score(y, predictions, pos_label=classes_[1])
-                tpr = recall_score(y, predictions, pos_label=classes_[1])
-                f1  =  f1_score(y,predictions, pos_label=classes_[1])
-                pre = precision_score(y, predictions, pos_label=classes_[1])
-                tpr = recall_score(y, predictions, pos_label=classes_[1])
-                f1 =  f1_score(y,predictions, pos_label=classes_[1])
-            else:
-                pre = precision_score(y, predictions)
-                tpr = recall_score(y, predictions)
-                f1  =  f1_score(y,predictions)
-                pre = precision_score(y, predictions)
-                tpr = recall_score(y, predictions)
-                f1 =  f1_score(y,predictions)
+            pre = precision_score(y, predictions, pos_label=nn.classes_[1])
+            tpr = recall_score(y, predictions, pos_label=nn.classes_[1])
+            f1  = f1_score(y, predictions, pos_label=nn.classes_[1])
             print("{:.<27s}{:10.4f}".format('Precision', pre))
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
             print("{:.<27s}{:10.4f}".format('F1-Score', f1))
@@ -209,7 +193,8 @@ class nn_classifier(object):
                 raise RuntimeError("\n  Call to display_metrics invalid"+\
                         "\n  Target does not appear to be nominal.\n")
                 sys.exit()
-            predict_ = nn.predict(X)
+            y        = _indicator(y, nn.classes_)
+            predict_ = _indicator(nn.predict(X), nn.classes_)
             prob_ = nn.predict_proba(X)
             ase_sum  = 0
             mase_sum = 0
@@ -219,13 +204,16 @@ class nn_classifier(object):
             conf_mat = []
             for i in range(n_classes):
                 conf_mat.append(np.zeros(n_classes))
-            y_ = np.ravel(y) # necessary because yt is a df with row keys
             for i in range(n_classes):
                 misc.append(0)
                 n_.append(0)
             for i in range(n_obs):
+                if type(y) == pd.DataFrame:
+                   ky = y.iloc[i].argmax()
+                else:
+                   ky = y[i].argmax()
                 for j in range(n_classes):
-                    if y_[i] == nn.classes_[j]:
+                    if ky == j:
                         ase_sum += (1-prob_[i,j])*(1-prob_[i,j])
                         mase_sum += 1-prob_[i,j]
                         idx = j
@@ -233,11 +221,10 @@ class nn_classifier(object):
                     else:
                         ase_sum  += prob_[i,j]*prob_[i,j]
                         mase_sum += prob_[i,j]
-                for j in range(n_classes):
-                    if predict_[i] == nn.classes_[j]:
-                            conf_mat[idx][j] += 1
-                            continue
-                if predict_[i] != nn.classes_[idx]:
+                
+                kp = predict_[i].argmax()
+                conf_mat[idx][kp] += 1
+                if kp != idx:
                     misc_     += 1
                     misc[idx] += 1
             tmisc = misc_
@@ -266,20 +253,18 @@ class nn_classifier(object):
                                      nn.n_iter_))
                 print("{:.<27s}{:>10s}".format('Hidden Layer Activation', \
                                      nn.activation))
-                print("{:.<27s}{:>10s}".format('Target Activation', \
-                                     nn.out_activation_))
                 print("{:.<27s}{:10.4f}".format('Loss Function', \
                                      nn.loss_))
             print("{:.<27s}{:10.4f}".format('Avg Squared Error', ase))
             print("{:.<27s}{:10.4f}".format('Root ASE', sqrt(ase)))
             print("{:.<27s}{:10.4f}".format('Mean Absolute Error', mase))
-            acc = accuracy_score(y_, predict_)
+            acc = accuracy_score(y, predict_)
             print("{:.<27s}{:10.4f}".format('Accuracy', acc))
-            pre = precision_score(y_, predict_, average='macro')
+            pre = precision_score(y, predict_, average='macro')
             print("{:.<27s}{:10.4f}".format('Precision', pre))
-            tpr = recall_score(y_, predict_, average='macro')
+            tpr = recall_score(y, predict_, average='macro')
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
-            f1 =  f1_score(y_,predict_, average='macro')
+            f1 =  f1_score(y,predict_, average='macro')
             print("{:.<27s}{:10.4f}".format('F1-Score', f1))
             if type(nn)==MLPClassifier:
                 print("{:.<27s}{:10.4f}".format('Loss', nn.loss_))
@@ -287,7 +272,7 @@ class nn_classifier(object):
                     'Total Misclassifications', tmisc))
             print("{:.<27s}{:9.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_, '%'))
-            if type(nn.classes_[0]) == str:
+            if isinstance(nn.classes_[0], str):
                 fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
             else:
                 fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
@@ -299,7 +284,7 @@ class nn_classifier(object):
             print("\n\n     Confusion")
             print("       Matrix    ", end="")
             
-            if type(nn.classes_[0]) == str:
+            if isinstance(nn.classes_[0], str):
                 fstr1 = "{:>7s}{:<3s}"
                 fstr2 = "{:s}{:.<6s}"
             else:
@@ -314,7 +299,8 @@ class nn_classifier(object):
                     print("{:>10.0f}".format(conf_mat[i][j]), end="")
                 print("")
     
-            cr = classification_report(y_, predict_, labels=nn.classes_)
+            cr = classification_report(y, predict_, labels=range(n_classes),
+                               target_names=[str(c) for c in nn.classes_])
             print("\n",cr)
         
     def display_split_metrics(nn, Xt, yt, Xv, yv, target_names=None):
@@ -328,7 +314,7 @@ class nn_classifier(object):
                 raise RuntimeError("  Call to display_split_metrics "+\
                       "invalid.\n  Target does not have two classes.\n")
                 sys.exit()
-            if type(nn.classes_[0])==np.str_:
+            if isinstance(nn.classes_[0], str):
                 classes_ = nn.classes_
             else:
                 classes_ = [str(int(nn.classes_[0])), str(int(nn.classes_[1]))]
@@ -344,15 +330,17 @@ class nn_classifier(object):
             zv = np.zeros(len(yv))
             #zt = deepcopy(yt)
             for i in range(len(yt)):
-                if numpy_yt[i] == 1:
+                if numpy_yt[i] == nn.classes_[1]:
                     zt[i] = 1
             for i in range(len(yv)):
-                if numpy_yv[i] == 1:
+                if numpy_yv[i] == nn.classes_[1]:
                     zv[i] = 1
             predict_t = nn.predict(Xt)
             predict_v = nn.predict(Xv)
-            conf_matt = confusion_matrix(y_true=yt, y_pred=predict_t)
-            conf_matv = confusion_matrix(y_true=yv, y_pred=predict_v)
+            conf_matt = confusion_matrix(y_true=yt, y_pred=predict_t,
+                                         labels=nn.classes_)
+            conf_matv = confusion_matrix(y_true=yv, y_pred=predict_v,
+                                         labels=nn.classes_)
             prob_t = nn.predict_proba(Xt)
             prob_v = nn.predict_proba(Xv)
             print("\n")
@@ -368,13 +356,8 @@ class nn_classifier(object):
                                       nn.n_layers_-2, nn.n_layers_-2))
                 print("{:.<27s}{:11d}{:15d}".format('Outputs', \
                                       nn.n_outputs_, nn.n_outputs_))
-                n_neurons = 0
                 nl = nn.n_layers_-2
-                if nl>1:
-                    for i in range(nl):
-                        n_neurons += nn.hidden_layer_sizes[i]
-                else:
-                    n_neurons = nn.hidden_layer_sizes
+                n_neurons = sum(nn.coefs_[i].shape[1] for i in range(nl))
                 print("{:.<27s}{:11d}{:15d}".format('Neurons',
                                       n_neurons, n_neurons))
                 print("{:.<27s}{:11d}{:15d}".format('Weights', 
@@ -383,8 +366,6 @@ class nn_classifier(object):
                                       nn.n_iter_, nn.n_iter_))
                 print("{:.<27s}{:>11s}{:>15s}".format('Hidden Layer Activation', 
                                       nn.activation, nn.activation))
-                print("{:.<27s}{:>11s}{:>15s}".format('Target Activation', 
-                                      nn.out_activation_, nn.out_activation_))
                 print("{:.<27s}{:11.4f}{:15.4f}".format('Loss', 
                               nn.loss_, nn.loss_))
             print("{:.<27s}{:11.4f}{:15.4f}".format('Mean Absolute Error', 
@@ -397,20 +378,13 @@ class nn_classifier(object):
             acct = accuracy_score(yt, predict_t)
             accv = accuracy_score(yv, predict_v)
             print("{:.<27s}{:11.4f}{:15.4f}".format('Accuracy', acct, accv))
-            if type(numpy_yt[0])==str:
-                pre_t = precision_score(yt, predict_t, pos_label=classes_[1])
-                tpr_t = recall_score(yt, predict_t, pos_label=classes_[1])
-                f1_t  = f1_score(yt,predict_t, pos_label=classes_[1])
-                pre_v = precision_score(yv, predict_v, pos_label=classes_[1])
-                tpr_v = recall_score(yv, predict_v, pos_label=classes_[1])
-                f1_v  = f1_score(yv,predict_v, pos_label=classes_[1])
-            else:
-                pre_t = precision_score(yt, predict_t)
-                tpr_t = recall_score(yt, predict_t)
-                f1_t  = f1_score(yt,predict_t)
-                pre_v = precision_score(yv, predict_v)
-                tpr_v = recall_score(yv, predict_v)
-                f1_v  = f1_score(yv,predict_v)
+            pos = nn.classes_[1]
+            pre_t = precision_score(yt, predict_t, pos_label=pos)
+            tpr_t = recall_score(yt, predict_t, pos_label=pos)
+            f1_t  = f1_score(yt,predict_t, pos_label=pos)
+            pre_v = precision_score(yv, predict_v, pos_label=pos)
+            tpr_v = recall_score(yv, predict_v, pos_label=pos)
+            f1_v  = f1_score(yv,predict_v, pos_label=pos)
                 
             print("{:.<27s}{:11.4f}{:15.4f}".format('Precision', pre_t, pre_v))
             print("{:.<27s}{:11.4f}{:15.4f}".format('Recall (Sensitivity)', 
@@ -462,6 +436,7 @@ class nn_classifier(object):
             #print("\n",cr)
    
         else:
+            # NOMINAL TARGET
             try:
                 if len(nn.classes_) == 2:
                     raise RuntimeError("  Call to display_split_metrics "+\
@@ -480,12 +455,119 @@ class nn_classifier(object):
                 raise RuntimeError("  Call to display_split_metrics "+\
                       "invalid.\n  Target has less than three classes.\n")
                 sys.exit()
-            np_yt = np.ravel(yt)
-            np_yv = np.ravel(yv)
-            predict_t = nn.predict(Xt)
-            predict_v = nn.predict(Xv)
-            conf_mat_t = confusion_matrix(y_true=yt, y_pred=predict_t)
-            conf_mat_v = confusion_matrix(y_true=yv, y_pred=predict_v)
+
+            yt        = _indicator(yt, nn.classes_)
+            yv        = _indicator(yv, nn.classes_)
+            predict_t = _indicator(nn.predict(Xt), nn.classes_)
+            predict_v = _indicator(nn.predict(Xv), nn.classes_)
+            
+            if type(yt) == pd.DataFrame or len(yt.shape) > 1:
+                # Nominal Target
+                n = yt.shape[0]
+                m = yt.shape[1]
+            else:
+                # Binomial Target
+                n = len(yt)
+                m = 2
+            print("\n******** Confusion Matrix **********")
+            print("------------------------------------\n")
+            print("********  Training Data   **********")
+            print("------------------------------------")
+            conf_mat_t= np.zeros((m, m), dtype='int32')
+            misc = 0
+            if type(yt) == pd.DataFrame or len(yt.shape) > 1:
+                if type(yt) == pd.DataFrame:
+                   for i in range(n):
+                       kp = predict_t[i,].argmax()
+                       ky = yt.iloc[i,].argmax()
+                       conf_mat_t[ky, kp] += 1
+                       if ky != kp:
+                           misc += 1
+                else:
+                   for i in range(n):
+                       kp = predict_t[i,].argmax()
+                       ky = yt[i,].argmax()
+                       conf_mat_t[ky, kp] += 1
+                       if ky != kp:
+                           misc += 1
+                miscp = 100*misc/n
+                for i in range(m):
+                    for j in range(m):
+                        print("{:>6d} ".format(conf_mat_t[i,j]), end="")
+                    print("")
+            else:
+                for i in range(n):
+                    if   yt[i] == 0 and predict_t[i]  < 0.5:
+                          conf_mat_t[0,0] += 1
+                    elif yt[i] == 0 and predict_t[i] >= 0.5:
+                          conf_mat_t[0,1] += 1
+                          misc += 1
+                    elif yt[i] == 1 and predict_t[i] >= 0.5:
+                          conf_mat_t[1,1] += 1
+                    elif yt[i] == 1 and predict_t[i]  < 0.5:
+                          conf_mat_t[1,0] += 1
+                          misc += 1
+                miscp = 100*misc/n
+                for i in range(m):
+                    print("{:>5d} {:>5d}".\
+                          format(conf_mat_t[i,0], conf_mat_t[i,1]))
+            print("------------------------------------")
+            print("Training Misclassification: {}/{}={:>5.3f}%".\
+                      format(misc, n, miscp))
+                
+            if type(yv) == pd.DataFrame or len(yv.shape) > 1:
+                # Nominal Target
+                n = yv.shape[0]
+                m = yv.shape[1]
+            else:
+                # Binomial Target
+                n = len(yv)
+                m = 2
+            print("\n------------------------------------")
+            print("******** Validation Data  **********")
+            print("------------------------------------")
+            conf_mat_v = np.zeros((m, m), dtype='int32')
+            misc = 0
+            if type(yv) == pd.DataFrame or len(yv.shape) > 1:
+                if type(yv) == pd.DataFrame:
+                   for i in range(n):
+                       kp = predict_v[i,].argmax()
+                       ky = yv.iloc[i,].argmax()
+                       conf_mat_v[ky, kp] += 1
+                       if ky != kp:
+                           misc += 1
+                else:
+                   for i in range(n):
+                       kp = predict_v[i,].argmax()
+                       ky = yv[i,].argmax()
+                       conf_mat_v[ky, kp] += 1
+                       if ky != kp:
+                           misc += 1
+                miscp = 100*misc/n
+                for i in range(m):
+                    for j in range(m):
+                        print("{:>6d} ".format(conf_mat_v[i,j]), end="")
+                    print("")
+            else:
+                for i in range(n):
+                    if   yv[i] == 0 and predict_v[i]  < 0.5:
+                          conf_mat_v[0,0] += 1
+                    elif yv[i] == 0 and predict_v[i] >= 0.5:
+                          conf_mat_v[0,1] += 1
+                          misc += 1
+                    elif yv[i] == 1 and predict_v[i] >= 0.5:
+                          conf_mat_v[1,1] += 1
+                    elif yv[i] == 1 and predict_v[i]  < 0.5:
+                          conf_mat_v[1,0] += 1
+                          misc += 1
+                miscp = 100*misc/n
+                for i in range(m):
+                    print("{:>5d} {:>5d}".\
+                          format(conf_mat_v[i,0], conf_mat_v[i,1]))
+            print("------------------------------------")
+            print("Validation Misclassification: {}/{}={:>5.3f}%".\
+                      format(misc, n, miscp))
+            """************************************************************"""
             prob_t = nn.predict_proba(Xt) # or is this nn._predict_proba_dt ?
             prob_v = nn.predict_proba(Xv)
             
@@ -502,13 +584,10 @@ class nn_classifier(object):
             n_v    = []
             nt_obs = yt.shape[0]
             nv_obs = yv.shape[0]
-            conf_matt = []
-            conf_matv = []
-            for i in range(n_classes):
-                conf_matt.append(np.zeros(n_classes))
-                conf_matv.append(np.zeros(n_classes))
-            y_t = np.ravel(yt) # necessary because yt is a df with row keys
-            y_v = np.ravel(yv) # likewise
+            #y_t = np.ravel(yt) # necessary because yt is a df with row keys
+            #y_v = np.ravel(yv) # likewise
+            y_t = yt
+            y_v = yv
             for i in range(n_classes):
                 misct.append(0)
                 n_t.append(0)
@@ -516,39 +595,63 @@ class nn_classifier(object):
                 n_v.append(0)
             for i in range(nt_obs):
                 for j in range(n_classes):
-                    if y_t[i] == nn.classes_[j]:
-                        ase_sumt += (1-prob_t[i,j])*(1-prob_t[i,j])
-                        mase_sumt += (1-prob_t[i,j])
-                        idx = j
+                    if type(y_t) == pd.DataFrame:
+                       if y_t.iloc[i].argmax() == j:
+                           ase_sumt += (1-prob_t[i,j])*(1-prob_t[i,j])
+                           mase_sumt += (1-prob_t[i,j])
+                           idx = j
+                       else:
+                           ase_sumt += prob_t[i,j]*prob_t[i,j]
+                           mase_sumt += prob_t[i,j]
                     else:
-                        ase_sumt += prob_t[i,j]*prob_t[i,j]
-                        mase_sumt += prob_t[i,j]
-                for j in range(n_classes):
-                    if predict_t[i] == nn.classes_[j]:
-                        conf_matt[idx][j] += 1
-                        break
+                       if y_t[i].argmax() == j:
+                           ase_sumt += (1-prob_t[i,j])*(1-prob_t[i,j])
+                           mase_sumt += (1-prob_t[i,j])
+                           idx = j
+                       else:
+                           ase_sumt += prob_t[i,j]*prob_t[i,j]
+                           mase_sumt += prob_t[i,j]
+                      
                 n_t[idx] += 1
-                if predict_t[i] != y_t[i]:
-                    misc_t     += 1
-                    misct[idx] += 1
+                if type(y_t) == pd.DataFrame:
+                   if predict_t[i].argmax() != y_t.iloc[i].argmax():
+                       misc_t     += 1
+                       misct[idx] += 1
+                else:
+                   if predict_t[i].argmax() != y_t[i].argmax():
+                       misc_t     += 1
+                       misct[idx] += 1
                     
             for i in range(nv_obs):
-                for j in range(n_classes):
-                    if y_v[i] == nn.classes_[j]:
-                        ase_sumv += (1-prob_v[i,j])*(1-prob_v[i,j])
-                        mase_sumv += (1-prob_v[i,j])
-                        idx = j
-                    else:
-                        ase_sumv += prob_v[i,j]*prob_v[i,j]
-                        mase_sumv += prob_v[i,j]
-                for j in range(n_classes):
-                    if predict_v[i] == nn.classes_[j]:
-                        conf_matv[idx][j] += 1
-                        break
+                if type(y_v) == pd.DataFrame:
+                   for j in range(n_classes):
+                       if y_v.iloc[i].argmax() == j:
+                           ase_sumv += (1-prob_v[i,j])*(1-prob_v[i,j])
+                           mase_sumv += (1-prob_v[i,j])
+                           idx = j
+                       else:
+                           ase_sumv += prob_v[i,j]*prob_v[i,j]
+                           mase_sumv += prob_v[i,j]
+                else:
+                   for j in range(n_classes):
+                       if y_v[i].argmax() == j:
+                              ase_sumv += (1-prob_v[i,j])*(1-prob_v[i,j])
+                              mase_sumv += (1-prob_v[i,j])
+                              idx = j
+                       else:
+                              ase_sumv += prob_v[i,j]*prob_v[i,j]
+                              mase_sumv += prob_v[i,j]
+
                 n_v[idx] += 1
-                if predict_v[i] != y_v[i]:
-                    misc_v     += 1
-                    miscv[idx] += 1
+                if type(y_v) == pd.DataFrame:
+                   if predict_v[i].argmax() != y_v.iloc[i].argmax():
+                       misc_v     += 1
+                       miscv[idx] += 1
+                else:
+                   if predict_v[i].argmax() != y_v[i].argmax():
+                       misc_v     += 1
+                       miscv[idx] += 1
+                      
             misct_ = misc_t
             miscv_ = misc_v
             misc_t = 100*misc_t/nt_obs
@@ -556,7 +659,7 @@ class nn_classifier(object):
             aset   = ase_sumt/(n_classes*nt_obs)
             asev   = ase_sumv/(n_classes*nv_obs)
             maset  = mase_sumt/(n_classes*nt_obs)
-            masev  = mase_sumv/(n_classes*nt_obs)
+            masev  = mase_sumv/(n_classes*nv_obs)
                     #Calculate number of weights
             n_weights = 0
             for i in range(nn.n_layers_ - 1):
@@ -618,16 +721,24 @@ class nn_classifier(object):
             fstr1="{:>7s}{:<3s}"
             fstr2="{:s}{:.<6s}"
             classes_ = []
-            if type(nn.classes_[0])==str:
+            if isinstance(nn.classes_[0], str):
                 classes_ = nn.classes_
             else:
                 for i in range(n_classes):
                     classes_.append(str(int(nn.classes_[i])))
+            if target_names is None:
+                target_names = [str(c) for c in classes_]
             for i in range(n_classes):
-                misct[i] = 100*misct[i]/n_t[i]
-                miscv[i] = 100*miscv[i]/n_v[i]
-                print(fstr0.format(\
-                      '     class ', classes_[i], misct[i], '%', miscv[i], '%'))
+               if n_t[i] > 0:
+                  misct[i] = 100*misct[i]/n_t[i]
+               else:
+                  misct[i] = 0
+               if n_v[i] > 0:
+                  miscv[i] = 100*miscv[i]/n_v[i]
+               else:
+                  miscv[i] = 0
+               print(fstr0.format(\
+                     '     class ', classes_[i], misct[i], '%', miscv[i], '%'))
     
             print("\n\nTraining")
             print("Confusion Matrix ", end="")
@@ -640,7 +751,8 @@ class nn_classifier(object):
                     print("{:>10d}".format(conf_mat_t[i][j]), end="")
                 print("")
                 
-            ct = classification_report(yt, predict_t, labels=target_names)
+            ct = classification_report(yt, predict_t, labels=range(n_classes),
+                                       target_names=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
@@ -653,7 +765,8 @@ class nn_classifier(object):
                 for j in range(n_classes):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
-            cv = classification_report(yv, predict_v, labels=target_names)
+            cv = classification_report(yv, predict_v, labels=range(n_classes),
+                                       target_names=target_names)
             print("\nValidation \nMetrics:\n",cv)
             
 class nn_keras(object):
@@ -845,8 +958,6 @@ class nn_keras(object):
                                  n_weights))
             print("{:.<27s}{:>10s}".format('Hidden Layer Activation', \
                                  hl_activation))
-            print("{:.<27s}{:>10s}".format('Target Activation', \
-                                 out_activation))
             print("{:.<27s}{:10.4f}".format('Avg Squared Error', ase))
             print("{:.<27s}{:10.4f}".format('Root ASE', sqrt(ase)))
             print("{:.<27s}{:10.4f}".format('Mean Absolute Error', mase))

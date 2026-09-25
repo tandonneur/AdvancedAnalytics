@@ -1,3 +1,4 @@
+LICENSE
 README.rst
 setup.py
 AdvancedAnalytics/Forest.py
@@ -8,7 +9,6 @@ AdvancedAnalytics/ReplaceImputeEncode.py
 AdvancedAnalytics/Text.py
 AdvancedAnalytics/Tree.py
 AdvancedAnalytics/__init__.py
-AdvancedAnalytics.egg-info/.DS_Store
 AdvancedAnalytics.egg-info/PKG-INFO
 AdvancedAnalytics.egg-info/SOURCES.txt
 AdvancedAnalytics.egg-info/dependency_links.txt

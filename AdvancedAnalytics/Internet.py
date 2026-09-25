@@ -7,6 +7,7 @@
 
 import sys
 import warnings
+import numpy  as np
 import pandas as pd
 
 import re
@@ -337,7 +338,8 @@ class scrape(object):
                                              'title', 'summary', 'text'])
                     # Check for an identical already in the file
                     if df_articles.shape[0]==0:
-                        df_articles  = df_articles.append(df_story)
+                        #df_articles  = df_articles.append(df_story)
+                        df_articles  = pd.concat([df_articles, df_story])
                     else:
                         # Verify this story is not already in df_articles
                         same_story = False
@@ -347,7 +349,8 @@ class scrape(object):
                                 n_to_review -= 1
                                 continue
                         if not(same_story):
-                            df_articles  = df_articles.append(df_story)
+                            #df_articles  = df_articles.append(df_story)
+                            df_articles  = pd.concat([df_articles, df_story])
                 else:
                     n_to_review -= 1
                     
@@ -538,7 +541,7 @@ class scrape(object):
         n_total  = len(df_urls)
         # Remove duplicates
         df_www  = df_www.drop_duplicates('url')
-        n_unique = len(df_urls)
+        n_unique = len(df_www)
         print("Found a total of", n_total, " web pages, of which", n_unique,\
               " were unique.")
         return df_www
@@ -548,6 +551,8 @@ class Metrics:
     def binary_loss(y, y_predict, fn_cost, fp_cost, display=True):
         loss     = [0, 0]       #False Neg Cost, False Pos Cost
         conf_mat = [[0, 0], [0, 0]] #tn, fp, fn, tp
+        y, y_predict = np.ravel(y), np.ravel(y_predict)
+        fn_cost, fp_cost = np.ravel(fn_cost), np.ravel(fp_cost)
         for j in range(len(y)):
             if y[j]==0:
                 if y_predict[j]==0:

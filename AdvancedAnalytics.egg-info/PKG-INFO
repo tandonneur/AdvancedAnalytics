@@ -1,19 +1,32 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: AdvancedAnalytics
-Version: 1.36
+Version: 1.40
 Summary: Python support for 'The Art and Science of Data Analytics'
 Home-page: https://github.com/tandonneur/AdvancedAnalytics
 Author: Edward R Jones
 Author-email: ejones@tamu.edu
-License: UNKNOWN
 Keywords: Analytics,data map,preprocessing,pre-processing,postprocessing,post-processing,NLTK,Sci-Learn,sklearn,StatsModels,web scraping,word cloud,regression,decision trees,random forest,neural network,cross validation,topic analysis,sentiment analytic,natural language processing,NLP
-Platform: UNKNOWN
 Classifier: Development Status :: 5 - Production/Stable
 Classifier: Topic :: Utilities
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Intended Audience :: Developers
 Classifier: Operating System :: OS Independent
+License-File: LICENSE
+Requires-Dist: scikit-learn
+Requires-Dist: scikit-image
+Requires-Dist: statsmodels
+Requires-Dist: nltk
+Requires-Dist: pydotplus
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: summary
 
 AdvancedAnalytics
 ===================
@@ -221,7 +234,5 @@ Code of Conduct
 ---------------
 
 Everyone interacting in the AdvancedAnalytics project's codebases, issue trackers, chat rooms, and mailing lists is expected to follow the PyPA Code of Conduct: https://www.pypa.io/en/latest/code-of-conduct/ .
-
-
 
 

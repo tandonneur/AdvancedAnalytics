@@ -72,6 +72,14 @@ class DT(Enum):
         else:ctype ='DT.Ignore'
         return ctype
     
+def _categories(values):
+    # sklearn's OneHotEncoder rejects unsorted numeric categories
+    values = list(values)
+    if all(isinstance(x, (int, float, np.number)) and not isinstance(x, bool)
+           for x in values):
+        return sorted(values)
+    return values
+
 """
 class ReplaceImputeEncode
 
@@ -123,7 +131,6 @@ class ReplaceImputeEncode(object):
         self.features_map = data_map
         self.drop    = drop
         self.display = display
-        self.interval_scale = interval_scale
         self.no_impute = no_impute
         self.no_encode = no_encode
         if binary_encoding=='None' or binary_encoding=='none':
@@ -131,8 +138,8 @@ class ReplaceImputeEncode(object):
         else:
             self.binary_encoding = binary_encoding
         #nominal_encoding can be 'SAS' or 'one-hot'
-        if binary_encoding != 'SAS' and binary_encoding != 'one-hot' \
-            and binary_encoding != None:
+        if self.binary_encoding != 'SAS' and \
+            self.binary_encoding != 'one-hot' and self.binary_encoding != None:
             raise ValueError("***Call to ReplaceImputeEncode invalid. "+
                  "***   binary_encoding="+binary_encoding+" is invalid."+
                  "***   must use None, 'one-hot' or 'SAS'")
@@ -142,14 +149,14 @@ class ReplaceImputeEncode(object):
         else:
             self.nominal_encoding = nominal_encoding
         #nominal_encoding can be 'SAS' or 'one-hot'
-        if nominal_encoding != 'SAS' and nominal_encoding != 'one-hot' \
-            and nominal_encoding != None:
+        if self.nominal_encoding != 'SAS' and \
+            self.nominal_encoding != 'one-hot' and self.nominal_encoding != None:
             raise ValueError("***Call to ReplaceImputeEncode invalid. "+
                  "***   nominal_encoding="+nominal_encoding+" is invalid."+
                  "***   must use None, 'one-hot' or 'SAS'")
             sys.exit()
-        if interval_scale != 'std' and interval_scale != 'robust' \
-            and interval_scale != None:
+        if self.interval_scale != 'std' and self.interval_scale != 'robust' \
+            and self.interval_scale != None:
             raise ValueError("***Call to ReplaceImputeEncode invalid. "+
                      "***   interval_scale="+interval_scale+" is invalid."+
                      "***   must use None, 'std' or 'robust'")
@@ -202,20 +209,21 @@ class ReplaceImputeEncode(object):
                     # Attribute must be Nominal
                     self.nominal_attributes.append(feature)
                     # Setup column names for Nominal encoding
-                    n_cat = len(v[1])
-                    self.onehot_cats.append(list(v[1]))
-                    data_type = type(v[1][n_cat-1])
+                    cats  = _categories(v[1])
+                    n_cat = len(cats)
+                    self.onehot_cats.append(cats)
+                    data_type = type(cats[n_cat-1])
                     if self.drop == True:
                         n_cat -= 1
                     for i in range(n_cat):
-                        if type(v[1][i]) != data_type:
+                        if type(cats[i]) != data_type:
                             raise TypeError(
                               "\n***Classes invalid for--> '"+feature+"'"+
                               "\n***Must be all numeric or strings, not both.")
-                        if type(v[1][i])==int:
-                            my_str = feature+str(v[1][i])
+                        if type(cats[i])==int:
+                            my_str = feature+str(cats[i])
                         else:
-                            my_str = feature+("%i" %i)+":"+str(v[1][i])[0:10]
+                            my_str = feature+("%i" %i)+":"+str(cats[i])[0:10]
                         self.onehot_attributes.append(my_str)
 
         self.n_interval = len(self.interval_attributes)
@@ -243,6 +251,10 @@ class ReplaceImputeEncode(object):
         self.go_flag = True
         
     def fit(self, df, data_map=None):
+        if not df.index.is_unique:
+            raise ValueError("  Call to ReplaceImputeEncode invalid.\n"+
+                "  DataFrame index has duplicate labels; use "+
+                "df.reset_index(drop=True) first.")
         self.df_copy = deepcopy(df)
         #self.df_copy = df
         if data_map==None and self.features_map==None:
@@ -269,7 +281,11 @@ class ReplaceImputeEncode(object):
         self.onehot_attributes   = []
         self.onehot_cats         = []
         self.hot_drop_list       = []
+        self.missing_counts      = {}
+        self.outlier_counts      = {}
         for feature,v in self.features_map.items():
+            self.missing_counts[feature] = 0
+            self.outlier_counts[feature] = 0
             if v[0] not in DT.getDataTypes():
                 raise TypeError(
                   "\n***Data Map in call to ReplaceImputeEncode invalid.\n"+
@@ -284,13 +300,14 @@ class ReplaceImputeEncode(object):
                 else:
                     if v[0]==DT.Nominal:
                         self.nominal_attributes.append(feature)
-                        self.onehot_cats.append(list(v[1]))
-                        for i in range(len(v[1])):
-                            if type(v[1][i])==int:
-                                my_str = feature+str(v[1][i])
+                        cats = _categories(v[1])
+                        self.onehot_cats.append(cats)
+                        for i in range(len(cats)):
+                            if type(cats[i])==int:
+                                my_str = feature+str(cats[i])
                             else:
                                 my_str = feature+("%i" %i)+":"+ \
-                                                str(v[1][i])[0:10]
+                                                str(cats[i])[0:10]
                             self.onehot_attributes.append(my_str)
                         if self.drop==True:
                             self.hot_drop_list.append(my_str)
@@ -361,7 +378,18 @@ class ReplaceImputeEncode(object):
                        sys.exit()
                     l_limit = v[1][0]
                     u_limit = v[1][1]
-                    if df.loc[i,feature]>u_limit or df.loc[i,feature]<l_limit:
+                    # Check if the value is numeric before comparing
+                    try:
+                        value = df.loc[i,feature]
+                        if pd.isna(value) or pd.isnull(value):
+                            continue  # Skip NaN/None values
+                        # Try to convert to float for comparison
+                        numeric_value = float(value)
+                        if numeric_value > u_limit or numeric_value < l_limit:
+                            self.outlier_counts[feature] += 1
+                            self.df_copy.loc[i,feature] = None
+                    except (ValueError, TypeError):
+                        # If conversion fails, treat as outlier and convert to None
                         self.outlier_counts[feature] += 1
                         self.df_copy.loc[i,feature] = None
                 else: 
@@ -419,7 +447,7 @@ class ReplaceImputeEncode(object):
                 #Numerical attribute
                 if len(n) < max_n:
                     # Numerical Attribute is Binary or Nominal
-                    a   = df[feature].unique()
+                    a   = np.asarray(df[feature].dropna().unique())
                     # Look for string in a
                     j = 0
                     for i in range(len(a)):
@@ -439,25 +467,15 @@ class ReplaceImputeEncode(object):
                                           categories]
                 else:
                     # Attribute is Interval
-                    draft_features_map[feature]=["DT.Interval",
+                    draft_features_map[feature]=[DT.Interval,
                                       (min_, max_)]
 
             else:
                 # String Attribute is Binary, Nominal or Text or String
                 if len(n) < max_s: 
                     # String Attribute is Binary or Nominal
-                    a = df[feature].unique()
-                    # Look for nan in a
-                    no_nan = False
-                    while no_nan == False:
-                        j = -1
-                        for i in range(len(a)):
-                            if type(a[i]) != str:
-                                j = i
-                        if j>=0:
-                            a = np.delete(a,j)
-                        else:
-                            no_nan=True
+                    a = np.array([x for x in df[feature].dropna().unique()
+                                  if isinstance(x, str)], dtype=object)
                     a.sort()
                     categories = tuple(a)
                     if len(a) == 2:
@@ -576,7 +594,8 @@ class ReplaceImputeEncode(object):
         interval_data= self.df_copy[self.interval_attributes].values
         # Create the Imputer for the Interval Data
         #self.interval_imputer = preprocessing.Imputer(strategy='mean')
-        self.interval_imputer = SimpleImputer(strategy='mean')
+        self.interval_imputer = SimpleImputer(strategy='mean',
+                                              keep_empty_features=True)
         # Impute the missing values in the Interval data
         self.imputed_interval_data = \
             self.interval_imputer.fit_transform(interval_data)
@@ -596,7 +615,8 @@ class ReplaceImputeEncode(object):
         cat_array = cat_df.values
         # Create Imputer for Categorical Data
         #cat_imputer = preprocessing.Imputer(strategy='most_frequent')
-        cat_imputer = SimpleImputer(strategy='most_frequent')
+        cat_imputer = SimpleImputer(strategy='most_frequent',
+                                    keep_empty_features=True)
         # Impute the missing values in the Categorical Data
         self.imputed_binary_data = \
             cat_imputer.fit_transform(cat_array)
@@ -616,7 +636,8 @@ class ReplaceImputeEncode(object):
         cat_array = cat_df.values
         # Create Imputer for Categorical Data
         #cat_imputer = preprocessing.Imputer(strategy='most_frequent')
-        cat_imputer = SimpleImputer(strategy='most_frequent')
+        cat_imputer = SimpleImputer(strategy='most_frequent',
+                                    keep_empty_features=True)
         # Impute the missing values in the Categorical Data
         self.imputed_nominal_data = \
             cat_imputer.fit_transform(cat_array)
@@ -644,22 +665,18 @@ class ReplaceImputeEncode(object):
                 if k < 0:
                     warnings.warn("  \nArgument "+self.no_impute[j]+ \
                                   " in 'no_impute' is invalid.\n")
-                    break
+                    continue
+                # positional, so any DataFrame index is handled correctly
+                values = self.df_copy[self.no_impute[j]].to_numpy()
                 if k<self.n_interval:
-                    for i in range(self.n_obs):
-                        self.imputed_interval_data[i,k] = \
-                             self.df_copy[self.no_impute[j]][i]
+                    self.imputed_interval_data[:,k] = values
                 else:
                     if k < self.n_interval + self.n_binary:
                         k = k - self.n_interval
-                        for i in range(self.n_obs):
-                            self.imputed_binary_data[i,k] = \
-                                 self.df_copy[self.no_impute[j]][i]
+                        self.imputed_binary_data[:,k] = values
                     else:
                         k = k - self.n_interval - self.n_binary
-                        for i in range(self.n_obs):
-                            self.imputed_nominal_data[i,k] = \
-                                 self.df_copy[self.no_impute[j]][i]
+                        self.imputed_nominal_data[:,k] = values
        
         self.data_imputed= \
                 np.hstack((self.imputed_interval_data,\
@@ -667,7 +684,8 @@ class ReplaceImputeEncode(object):
                            self.imputed_nominal_data))
 
         self.imputed_data_df = \
-                pd.DataFrame(self.data_imputed, columns=col)
+                pd.DataFrame(self.data_imputed, columns=col,
+                             index=self.df_copy.index)
             
     def scale_encode(self):
 
@@ -703,13 +721,18 @@ class ReplaceImputeEncode(object):
         else:  # One-hot encoding
             low = 0
         for j in range(self.n_binary):
-            k = self.imputed_binary_data[0:,j].argmin()
-            smallest = self.imputed_binary_data[k,j]
-            for i in range(self.n_obs):
-                if self.imputed_binary_data[i,j] == smallest:
-                    self.imputed_binary_data[i,j] = low
-                else:
-                    self.imputed_binary_data[i,j] = 1
+            # values left missing (no_impute) must stay missing
+            column  = self.imputed_binary_data[:,j]
+            present = ~pd.isna(column)
+            if not present.any():
+                continue
+            # low level comes from the data map so subsets encode the same way
+            levels = self.features_map[self.binary_attributes[j]][1]
+            try:
+                smallest = min(levels)
+            except (TypeError, ValueError):
+                smallest = min(column[present])
+            column[present] = np.where(column[present] == smallest, low, 1)
    
     def encode_nominal(self):
         if (self.n_nominal==0 or self.nominal_encoding==None):
@@ -804,7 +827,8 @@ class ReplaceImputeEncode(object):
         # data_encoded array ready for conversion to dataframe
         
         self.encoded_data_df = \
-                pd.DataFrame(self.data_encoded, columns=self.col)
+                pd.DataFrame(self.data_encoded, columns=self.col,
+                             index=self.df_copy.index)
 
         if self.nominal_encoding == 'one-hot' and self.drop==True:
             self.encoded_data_df = \
@@ -826,8 +850,12 @@ class ReplaceImputeEncode(object):
                     self.encoded_data_df[feature].astype('int')
             elif feature in self.binary_attributes:
                 if self.binary_encoding != None:
-                    self.encoded_data_df[feature] = \
-                        self.encoded_data_df[feature].astype('int')
+                    if self.encoded_data_df[feature].isna().any():
+                        self.encoded_data_df[feature] = \
+                            self.encoded_data_df[feature].astype('float64')
+                    else:
+                        self.encoded_data_df[feature] = \
+                            self.encoded_data_df[feature].astype('int')
                 else:
                     self.encoded_data_df[feature] = \
                         self.encoded_data_df[feature].astype(\

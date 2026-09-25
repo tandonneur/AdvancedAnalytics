@@ -14,6 +14,7 @@ from sklearn.metrics import median_absolute_error
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.metrics import f1_score, confusion_matrix, classification_report 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn import __version__ as sklearnVersion
 import matplotlib.pyplot as plt
                
 class tree_regressor(object):
@@ -28,9 +29,9 @@ class tree_regressor(object):
             print("{:.<23s}{:>9s}".format('Max Depth', 'None'))
         else:
             print("{:.<23s}{:9d}".format('Max Depth', depth))
-        print("{:.<23s}{:9d}".format('Minimum Split Size', \
+        print("{:.<23s}{:>9}".format('Minimum Split Size', \
                                       dt.min_samples_split))
-        print("{:.<23s}{:9d}".format('Minimum Leaf  Size', \
+        print("{:.<23s}{:>9}".format('Minimum Leaf  Size', \
                                       dt.min_samples_leaf))
         R2 = r2_score(y, predictions)
         print("{:.<23s}{:9.4f}".format('R-Squared', R2))
@@ -59,9 +60,9 @@ class tree_regressor(object):
         else:
             print("{:.<23s}{:9d}{:15d}".format('Max Depth',   \
                                           depth, depth))
-        print("{:.<23s}{:9d}{:15d}".format('Minimum Split Size',   \
+        print("{:.<23s}{:>9}{:>15}".format('Minimum Split Size',   \
                          dt.min_samples_split, dt.min_samples_split))
-        print("{:.<23s}{:9d}{:15d}".format('Minimum Leaf  Size',   \
+        print("{:.<23s}{:>9}{:>15}".format('Minimum Leaf  Size',   \
                          dt.min_samples_leaf, dt.min_samples_leaf))
 
         R2t = r2_score(yt, predict_t)
@@ -81,7 +82,7 @@ class tree_regressor(object):
                       sqrt(mean_squared_error(yv,predict_v))))
         
     def display_importance(dt, col, top='all', plot=False):
-        nx = dt.n_features_
+        nx = dt.n_features_in_
         if nx != len(col):
             print("NX=", nx)
             print("col length ", len(col))
@@ -89,16 +90,18 @@ class tree_regressor(object):
                   "  Number of feature labels (col) not equal to the " +\
                   "number of features in the decision tree.")
             sys.exit()
-        if type(top) != int and type(top) != str:
+        if isinstance(top, bool) or \
+           not isinstance(top, (int, np.integer, str)):
             raise RuntimeError("   Call to display_importance invalid\n"+\
                   "   Value of top is invalid.  Must be set to 'all' or"+\
                   " an integer less than the number of columns in X.")
             sys.exit()
-        if type(top) == str and top != 'all':
+        if isinstance(top, str) and top != 'all':
             raise RuntimeError("   Call to display_importance invalid\n"+\
                   "   Value of top is invalid.  Must be set to 'all' or"+\
                   " an integer less than the number of columns in X.")
             sys.exit()
+        col = [str(c) for c in col]
         max_label = 6
         for i in range(len(col)):
             if len(col[i]) > max_label:
@@ -126,7 +129,7 @@ class tree_regressor(object):
         label_format2 = ("{:.<%i" %max_label)+"s}{:s}"
         print(label_format2.format("FEATURE", " IMPORTANCE"))
         n_x = nx
-        if type(top) == int:
+        if isinstance(top, (int, np.integer)):
             if top <= n_x and top > 0:
                 n_x = top
         for i in range(n_x):
@@ -142,16 +145,14 @@ class tree_regressor(object):
         f.set_index('feature', inplace=True)
         # Plot using Pandas plot which uses pyplot
         print("\nFeature Importances:")
-        plt.figure() # clears any exiting plot
         plt_ = f.plot(kind='barh', figsize=(8, 10), fontsize=14)
         plt_.set_ylabel("Features", fontname="Arial", fontsize=14)
-        plt.figure() # Forces immediate display and clears plot
         plt.show()
                
 class tree_classifier(object):
     
     def display_importance(dt, col, top='all', plot=False):
-        nx = dt.n_features_
+        nx = dt.n_features_in_
         if nx != len(col):
             print("NX=", nx)
             print("col length ", len(col))
@@ -159,16 +160,18 @@ class tree_classifier(object):
                   "  Number of feature labels (col) not equal to the " +
                   "number of features in the decision tree.")
             sys.exit()
-        if type(top) != int and type(top) != str:
+        if isinstance(top, bool) or \
+           not isinstance(top, (int, np.integer, str)):
             raise RuntimeError("   Call to display_importance invalid\n"+
                   "   Value of top is invalid.  Must be set to 'all' or"+
                   " an integer less than the number of columns in X.")
             sys.exit()
-        if type(top) == str and top != 'all':
+        if isinstance(top, str) and top != 'all':
             raise RuntimeError("   Call to display_importance invalid\n"+
                   "   Value of top is invalid.  Must be set to 'all' or"+
                   " an integer less than the number of columns in X.")
             sys.exit()
+        col = [str(c) for c in col]
         max_label = 6
         for i in range(len(col)):
             if len(col[i]) > max_label:
@@ -196,7 +199,7 @@ class tree_classifier(object):
         label_format2 = ("{:.<%i" %max_label)+"s}{:s}"
         print(label_format2.format("FEATURE", " IMPORTANCE"))
         n_x = nx
-        if type(top) == int:
+        if isinstance(top, (int, np.integer)):
             if top <= n_x and top > 0:
                 n_x = top
         for i in range(n_x):
@@ -212,26 +215,25 @@ class tree_classifier(object):
         f.set_index('feature', inplace=True)
         # Plot using Pandas plot which uses pyplot
         print("\nFeature Importances:")
-        plt.figure() # clears any exiting plot
         plt_ = f.plot(kind='barh', figsize=(8, 10), fontsize=14)
         plt_.set_ylabel("Features", fontname="Arial", fontsize=14)
-        plt.figure() # Forces immediate display and clears plot
         plt.show()
         
     def display_metrics(dt, X, y):
         if len(dt.classes_) == 2:
             numpy_y = np.ravel(y)
-            if type(numpy_y[0])==str:
+            if isinstance(numpy_y[0], str):
                 classes_ = dt.classes_
             else:
                 classes_ = [str(int(dt.classes_[0])), str(int(dt.classes_[1]))]
             z = np.zeros(len(y))
             predictions = dt.predict(X) # get binary class predictions
-            conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
+            conf_mat = confusion_matrix(y_true=y, y_pred=predictions,
+                                        labels=dt.classes_)
             tmisc = conf_mat[0][1]+conf_mat[1][0]
             misc = 100*(tmisc)/(len(y))
             for i in range(len(y)):
-                if numpy_y[i] == 1:
+                if numpy_y[i] == dt.classes_[1]:
                     z[i] = 1
             probability = dt.predict_proba(X) # get binary probabilities
             #probability = dt.predict_proba(X)
@@ -244,9 +246,9 @@ class tree_classifier(object):
             else:
                 print("{:.<27s}{:10d}".format('Maximum Tree Depth',\
                                   dt.max_depth))
-            print("{:.<27s}{:10d}".format('Minimum Leaf Size', \
+            print("{:.<27s}{:>10}".format('Minimum Leaf Size', \
                                   dt.min_samples_leaf))
-            print("{:.<27s}{:10d}".format('Minimum split Size', \
+            print("{:.<27s}{:>10}".format('Minimum split Size', \
                                   dt.min_samples_split))
             print("{:.<27s}{:10.4f}".format('Mean Absolute Error', \
                           mean_absolute_error(z,probability[:, 1])))
@@ -254,16 +256,16 @@ class tree_classifier(object):
                           mean_squared_error(z,probability[:, 1])))
             acc = accuracy_score(y, predictions)
             print("{:.<27s}{:10.4f}".format('Accuracy', acc))
-            if type(numpy_y[0]) == str:
+            if isinstance(numpy_y[0], str):
                 pre  = precision_score(y, predictions, pos_label=classes_[1])
                 tpr  = recall_score(y, predictions, pos_label=classes_[1])
                 tpr0 = recall_score(y, predictions, pos_label=classes_[0])
                 f1   =  f1_score(y,predictions, pos_label=classes_[1])
             else:
-                pre  = precision_score(y, predictions)
-                tpr  = recall_score(y, predictions)
-                tpr0 = recall_score(y, predictions, pos_label=0)
-                f1   =  f1_score(y,predictions)
+                pre  = precision_score(y, predictions, pos_label=dt.classes_[1])
+                tpr  = recall_score(y, predictions, pos_label=dt.classes_[1])
+                tpr0 = recall_score(y, predictions, pos_label=dt.classes_[0])
+                f1   =  f1_score(y,predictions, pos_label=dt.classes_[1])
             print("{:.<27s}{:10.4f}".format('Precision', pre))
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
             print("{:.<27s}{:10.4f}".format('Specificity', tpr0))
@@ -303,14 +305,15 @@ class tree_classifier(object):
     
             np_y = np.ravel(y)
             classes_ = [" "]*len(dt.classes_)
-            if type(np_y[0])==str:
+            if isinstance(np_y[0], str):
                 classes_ = dt.classes_
             else:
                 for i in range(len(dt.classes_)):
                     classes_[i] = str(int(dt.classes_[i]))
             probability = dt.predict_proba(X) # get class probabilitie
             predictions = dt.predict(X) # get nominal class predictions
-            conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
+            conf_mat = confusion_matrix(y_true=y, y_pred=predictions,
+                                        labels=dt.classes_)
             misc  = 0
             miscc = []
             n_    = []
@@ -349,9 +352,9 @@ class tree_classifier(object):
             else:
                 print("{:.<27s}{:10d}".format('Maximum Tree Depth',\
                                   dt.max_depth))
-            print("{:.<27s}{:10d}".format('Minimum Leaf Size', \
+            print("{:.<27s}{:>10}".format('Minimum Leaf Size', \
                                   dt.min_samples_leaf))
-            print("{:.<27s}{:10d}".format('Minimum split Size', \
+            print("{:.<27s}{:>10}".format('Minimum split Size', \
                                   dt.min_samples_split))
             
             print("{:.<27s}{:10.4f}".format('ASE', ase))
@@ -370,7 +373,7 @@ class tree_classifier(object):
             print("{:.<27s}{:9.1f}{:s}".format(\
                     'MISC (Misclassification)', misc, '%'))
             
-            if type(dt.classes_[0]) == str:
+            if isinstance(dt.classes_[0], str):
                 fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
             else:
                 fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
@@ -382,19 +385,19 @@ class tree_classifier(object):
             print("       Matrix    ", end="")
             
             fstr1 = "{:>7s}{:<3.0f}"
-            if type(dt.classes_[0]) == str:
+            if isinstance(dt.classes_[0], str):
                 fstr2 = "{:.<15s}"
             else:
                 fstr2 = "{:s}{:.<6.0f}"
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ', dt.classes_[i]), end="")
                     
             print("")
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', dt.classes_[i]), end="")
@@ -411,7 +414,7 @@ class tree_classifier(object):
         if len(dt.classes_) == 2:
             numpy_yt = np.ravel(yt)
             numpy_yv = np.ravel(yv)
-            if type(numpy_yt[0])==str:
+            if isinstance(numpy_yt[0], str):
                 classes_ = dt.classes_
             else:
                 classes_ = [str(int(dt.classes_[0])), str(int(dt.classes_[1]))]
@@ -419,16 +422,18 @@ class tree_classifier(object):
             zv = np.zeros(len(yv))
             #zt = deepcopy(yt)
             for i in range(len(yt)):
-                if numpy_yt[i] == 1:
+                if numpy_yt[i] == dt.classes_[1]:
                     zt[i] = 1
             for i in range(len(yv)):
-                if numpy_yv[i] == 1:
+                if numpy_yv[i] == dt.classes_[1]:
                     zv[i] = 1
     
             predict_t = dt.predict(Xt)
             predict_v = dt.predict(Xv)
-            conf_matt = confusion_matrix(y_true=yt, y_pred=predict_t)
-            conf_matv = confusion_matrix(y_true=yv, y_pred=predict_v)
+            conf_matt = confusion_matrix(y_true=yt, y_pred=predict_t,
+                                         labels=dt.classes_)
+            conf_matv = confusion_matrix(y_true=yv, y_pred=predict_v,
+                                         labels=dt.classes_)
             prob_t = dt.predict_proba(Xt)
             prob_v = dt.predict_proba(Xv)
             print("\n")
@@ -445,9 +450,9 @@ class tree_classifier(object):
             else:
                 print("{:.<23s}{:15d}{:15d}".format('Maximum Tree Depth',
                                   dt.max_depth, dt.max_depth))
-            print("{:.<23s}{:15d}{:15d}".format('Minimum Leaf Size', 
+            print("{:.<23s}{:>15}{:>15}".format('Minimum Leaf Size', 
                                   dt.min_samples_leaf, dt.min_samples_leaf))
-            print("{:.<23s}{:15d}{:15d}".format('Minimum split Size', 
+            print("{:.<23s}{:>15}{:>15}".format('Minimum split Size', 
                                   dt.min_samples_split, dt.min_samples_split))
     
             print("{:.<23s}{:15.4f}{:15.4f}".format('Mean Absolute Error', 
@@ -460,7 +465,7 @@ class tree_classifier(object):
             acct = accuracy_score(yt, predict_t)
             accv = accuracy_score(yv, predict_v)
             print("{:.<23s}{:15.4f}{:15.4f}".format('Accuracy', acct, accv))
-            if type(numpy_yt[0])==str:
+            if isinstance(numpy_yt[0], str):
                 pre_t = precision_score(yt, predict_t, pos_label=classes_[1])
                 tpr_t = recall_score(yt, predict_t, pos_label=classes_[1])
                 f1_t  = f1_score(yt,predict_t, pos_label=classes_[1])
@@ -471,14 +476,15 @@ class tree_classifier(object):
                 tpr0_t = recall_score(yt, predict_t, pos_label=classes_[0])
                 tpr0_v = recall_score(yv, predict_v, pos_label=classes_[0])
             else:
-                pre_t = precision_score(yt, predict_t)
-                tpr_t = recall_score(yt, predict_t)
-                f1_t  = f1_score(yt,predict_t)
-                pre_v = precision_score(yv, predict_v)
-                tpr_v = recall_score(yv, predict_v)
-                f1_v  = f1_score(yv,predict_v)
-                tpr0_t = recall_score(yt, predict_t, pos_label=0)
-                tpr0_v = recall_score(yv, predict_v,  pos_label=0)
+                pos, neg = dt.classes_[1], dt.classes_[0]
+                pre_t = precision_score(yt, predict_t, pos_label=pos)
+                tpr_t = recall_score(yt, predict_t, pos_label=pos)
+                f1_t  = f1_score(yt,predict_t, pos_label=pos)
+                pre_v = precision_score(yv, predict_v, pos_label=pos)
+                tpr_v = recall_score(yv, predict_v, pos_label=pos)
+                f1_v  = f1_score(yv,predict_v, pos_label=pos)
+                tpr0_t = recall_score(yt, predict_t, pos_label=neg)
+                tpr0_v = recall_score(yv, predict_v, pos_label=neg)
                 
             print("{:.<27s}{:11.4f}{:15.4f}".format('Precision', pre_t, pre_v))
             print("{:.<27s}{:11.4f}{:15.4f}".format('Recall (Sensitivity)', 
@@ -539,8 +545,10 @@ class tree_classifier(object):
                 sys.exit()
             predict_t = dt.predict(Xt)
             predict_v = dt.predict(Xv)
-            conf_mat_t = confusion_matrix(y_true=yt, y_pred=predict_t)
-            conf_mat_v = confusion_matrix(y_true=yv, y_pred=predict_v)
+            conf_mat_t = confusion_matrix(y_true=yt, y_pred=predict_t,
+                                         labels=dt.classes_)
+            conf_mat_v = confusion_matrix(y_true=yv, y_pred=predict_v,
+                                         labels=dt.classes_)
             prob_t = dt.predict_proba(Xt) # or is this dt._predict_proba_dt ?
             prob_v = dt.predict_proba(Xv)
             
@@ -562,6 +570,11 @@ class tree_classifier(object):
                 conf_matv.append(np.zeros(n_classes))
             y_t = np.ravel(yt) # necessary because yt is a df with row keys
             y_v = np.ravel(yv) # likewise
+            unseen = (set(np.unique(y_t)) | set(np.unique(y_v))) - \
+                     set(dt.classes_)
+            if unseen:
+                raise ValueError("Target contains classes not in the "+
+                                 "fitted model: "+str(unseen))
             for i in range(n_classes):
                 misct.append(0)
                 n_t.append(0)
@@ -622,9 +635,9 @@ class tree_classifier(object):
             else:
                 print("{:.<23s}{:15d}{:15d}".format('Maximum Tree Depth',
                              dt.max_depth, dt.max_depth))
-            print("{:.<23s}{:15d}{:15d}".format('Minimum Leaf Size', 
+            print("{:.<23s}{:>15}{:>15}".format('Minimum Leaf Size', 
                              dt.min_samples_leaf, dt.min_samples_leaf))
-            print("{:.<23s}{:15d}{:15d}".format('Minimum split Size', 
+            print("{:.<23s}{:>15}{:>15}".format('Minimum split Size', 
                              dt.min_samples_split, dt.min_samples_split))
     
             print("{:.<23s}{:15.4f}{:15.4f}".format('Avg Squared Error', 
@@ -653,20 +666,20 @@ class tree_classifier(object):
             
             fstr0="{:s}{:.<16s}{:>10.1f}{:<1s}{:>14.1f}{:<1s}"         
             fstr1 = "{:>7s}{:<3.0f}"
-            if type(dt.classes_[0]) == str:
+            if isinstance(dt.classes_[0], str):
                 fstr2 = "{:.<15s}"
             else:
                 fstr2 = "{:s}{:.<6.0f}"
                 
             classes_ = []
-            if type(dt.classes_[0])==str:
+            if isinstance(dt.classes_[0], str):
                 classes_ = dt.classes_
             else:
                 for i in range(n_classes):
                     classes_.append(str(int(dt.classes_[i])))
             for i in range(n_classes):
-                misct[i] = 100*misct[i]/n_t[i]
-                miscv[i] = 100*miscv[i]/n_v[i]
+                misct[i] = 100*misct[i]/n_t[i] if n_t[i] > 0 else float('nan')
+                miscv[i] = 100*miscv[i]/n_v[i] if n_v[i] > 0 else float('nan')
                 print(fstr0.format(
                             '     class ', classes_[i], misct[i], 
                             '%', miscv[i], '%'))
@@ -675,13 +688,13 @@ class tree_classifier(object):
             print("Confusion Matrix ", end="")
             
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ', dt.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', dt.classes_[i]), end="")
@@ -691,20 +704,21 @@ class tree_classifier(object):
                 print("")
             print("")
 
-            ct = classification_report(yt, predict_t, labels=target_names)
+            ct = classification_report(yt, predict_t, labels=dt.classes_,
+                                       target_names=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ', dt.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                if type(dt.classes_[0]) == str:
+                if isinstance(dt.classes_[0], str):
                     print(fstr2.format(str(i)+" "+dt.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', dt.classes_[i]), end="")
@@ -714,5 +728,6 @@ class tree_classifier(object):
                 print("")
             print("")
 
-            cv = classification_report(yv, predict_v, labels=target_names)
+            cv = classification_report(yv, predict_v, labels=dt.classes_,
+                                       target_names=target_names)
             print("\nValidation \nMetrics:\n",cv)

@@ -43,15 +43,22 @@ class linreg(object):
         label_format = ("{:.<%i" %max_label)+"s}{:15.4f}"
         
         if type(lr) != sm.regression.linear_model.RegressionResultsWrapper:
-            print("TYPE: ", type(lr))
             print(label_format.format('Intercept', lr.intercept_))
             for i in range(X.shape[1]):
                 print(label_format.format(col[i], lr.coef_[i]))
         else:
-            for i in range(X.shape[1]):
-                print(label_format.format(col[i], lr.params[i]))
+            # params includes the constant when the model was fit with one,
+            # even if X passed here does not contain that column
+            labels = [str(c) for c in col]
+            if len(lr.params) == len(labels) + 1:
+                labels = ['Intercept'] + labels
+            labels = ['Intercept' if c == 'const' else c for c in labels]
+            for label, value in zip(labels, lr.params):
+                print(label_format.format(label, value))
     
     def display_metrics(lr, X, y, w=None):
+        if w is not None:
+            w = np.ravel(np.asarray(w, dtype=float))
         predictions = lr.predict(X)
         n  = X.shape[0]
         p  = X.shape[1] # Notations uses Sheather's convention
@@ -60,7 +67,7 @@ class linreg(object):
         print("{:.<23s}{:15d}".format('Observations', n))
         print("{:.<23s}{:15d}".format('Coefficients', p+1))
         print("{:.<23s}{:15d}".format('DF Error', X.shape[0]-X.shape[1]-1))
-        if type(w)==np.ndarray:
+        if w is not None:
             R2 = r2_score(y, predictions, sample_weight=w)
             n = w.sum()
         else:
@@ -70,14 +77,14 @@ class linreg(object):
         adjr2 = ((n-1)/(n-p-1))*adjr2
         adjr2 = 1.0 - adjr2
         print("{:.<23s}{:15.4f}".format('Adj. R-Squared', adjr2))
-        if type(w)==np.ndarray:
+        if w is not None:
             MAE = mean_absolute_error(y,predictions, sample_weight=w)
         else:
             MAE = mean_absolute_error(y,predictions)
         print("{:.<23s}{:15.4f}".format('Mean Absolute Error', MAE))
         MAE = median_absolute_error(y,predictions)
         print("{:.<23s}{:15.4f}".format('Median Absolute Error', MAE))
-        if type(w)==np.ndarray:
+        if w is not None:
             ASE = mean_squared_error(y,predictions, sample_weight=w)
         else:
             ASE = mean_squared_error(y,predictions)
@@ -102,12 +109,14 @@ class linreg(object):
         print("{:.<23s}{:15.4f}".format('BIC            ', BIC))
         
     def return_metrics(lr, X, y, w=None):
+        if w is not None:
+            w = np.ravel(np.asarray(w, dtype=float))
         metrics = [0, 0, 0, 0]
         predictions = lr.predict(X)
         n  = X.shape[0]
         p  = X.shape[1] # Notations uses Sheather's convention
         k  = p+2 # need to count the estimated variance and intercept
-        if type(w)==np.ndarray:
+        if w is not None:
             R2 = r2_score(y, predictions, sample_weight=w)
             n = w.sum()
         else:
@@ -116,7 +125,7 @@ class linreg(object):
         adjr2 = ((n-1)/(n-p-1))*adjr2
         adjr2 = 1.0 - adjr2
         metrics[0] = adjr2
-        if type(w)==np.ndarray:
+        if w is not None:
             ASE = mean_squared_error(y,predictions, sample_weight=w)
         else:
             ASE = mean_squared_error(y,predictions)
@@ -137,12 +146,16 @@ class linreg(object):
         return metrics
     
     def display_split_metrics(lr, Xt, yt, Xv, yv, wt=None, wv=None):
+        if wt is not None:
+            wt = np.ravel(np.asarray(wt, dtype=float))
+        if wv is not None:
+            wv = np.ravel(np.asarray(wv, dtype=float))
         predict_t = lr.predict(Xt)
         predict_v = lr.predict(Xv)
-        nt  = Xt.shape[0]
+        nt  = Xt.shape[0] if wt is None else wt.sum()
         pt  = Xt.shape[1] # Notations uses Sheather's convention
         kt  = pt+2 # need to count the estimated variance and intercept
-        nv  = Xv.shape[0]
+        nv  = Xv.shape[0] if wv is None else wv.sum()
         pv  = Xv.shape[1] # Notations uses Sheather's convention
         kv  = pv+2 # need to count the estimated variance and intercept
         print("\n")
@@ -154,8 +167,8 @@ class linreg(object):
                                           Xt.shape[1]+1, Xv.shape[1]+1))
         print("{:.<23s}{:15d}{:15d}".format('DF Error', \
                       Xt.shape[0]-Xt.shape[1]-1, Xv.shape[0]-Xv.shape[1]-1))
-        R2t = r2_score(yt, predict_t)
-        R2v = r2_score(yv, predict_v)
+        R2t = r2_score(yt, predict_t, sample_weight=wt)
+        R2v = r2_score(yv, predict_v, sample_weight=wv)
         print("{:.<23s}{:15.4f}{:15.4f}".format('R-Squared', R2t, R2v))
         adjr2t = 1.0-R2t 
         adjr2t = ((nt-1)/(nt-pt-1))*adjr2t
@@ -166,13 +179,13 @@ class linreg(object):
         print("{:.<23s}{:15.4f}{:15.4f}".format('Adj. R-Squared', \
                       adjr2t, adjr2v))
         print("{:.<23s}{:15.4f}{:15.4f}".format('Mean Absolute Error', \
-                      mean_absolute_error(yt,predict_t), \
-                      mean_absolute_error(yv,predict_v)))
+                      mean_absolute_error(yt,predict_t, sample_weight=wt), \
+                      mean_absolute_error(yv,predict_v, sample_weight=wv)))
         print("{:.<23s}{:15.4f}{:15.4f}".format('Median Absolute Error', \
                       median_absolute_error(yt,predict_t), \
                       median_absolute_error(yv,predict_v)))
-        ASEt = mean_squared_error(yt,predict_t)
-        ASEv = mean_squared_error(yv,predict_v)
+        ASEt = mean_squared_error(yt,predict_t, sample_weight=wt)
+        ASEv = mean_squared_error(yv,predict_v, sample_weight=wv)
         print("{:.<23s}{:15.4f}{:15.4f}".format('Avg Squared Error', \
                       ASEt, ASEv))
         print("{:.<23s}{:15.4f}{:15.4f}".format('Square Root ASE', \
@@ -312,17 +325,18 @@ class logreg(object):
     def display_metrics(lr, X, y):
         if len(lr.classes_) == 2:
             y_ = np.ravel(y) # necessary because yt is a df with row keys
-            if type(y_[0])==str:
+            if isinstance(y_[0], str):
                 classes_ = lr.classes_
             else:
                 classes_ = [str(int(lr.classes_[0])), str(int(lr.classes_[1]))]
             z  = np.zeros(len(y_))
             predictions = lr.predict(X) # get binary class predictions
-            conf_mat = confusion_matrix(y_true=y, y_pred=predictions)
+            conf_mat = confusion_matrix(y_true=y, y_pred=predictions,
+                                        labels=lr.classes_)
             tmisc = conf_mat[0][1]+conf_mat[1][0]
             misc  = 100*(tmisc)/(len(y_))
             for i in range(len(y_)):
-                if y_[i] == 1:
+                if y_[i] == lr.classes_[1]:
                     z[i] = 1
             #probability = lr.predict_proba(X) # get binary probabilities
             try:
@@ -345,16 +359,16 @@ class logreg(object):
                           mean_squared_error(z,probability[:, 1])))
             acc = accuracy_score(y, predictions)
             print("{:.<27s}{:10.4f}".format('Accuracy', acc))
-            if type(y_[0]) == str:
+            if isinstance(y_[0], str):
                 pre  = precision_score(y, predictions, pos_label=classes_[1])
                 tpr  = recall_score(y, predictions, pos_label=classes_[1])
                 tpr0 = recall_score(y, predictions, pos_label=classes_[0])
                 f1   = f1_score(y, predictions, pos_label=classes_[1])
             else:
-                pre  = precision_score(y, predictions)
-                tpr  = recall_score(y, predictions)
-                tpr0 = recall_score(y, predictions,  pos_label=0)
-                f1   = f1_score(y, predictions)
+                pre  = precision_score(y, predictions, pos_label=lr.classes_[1])
+                tpr  = recall_score(y, predictions, pos_label=lr.classes_[1])
+                tpr0 = recall_score(y, predictions, pos_label=lr.classes_[0])
+                f1   = f1_score(y, predictions, pos_label=lr.classes_[1])
             print("{:.<27s}{:10.4f}".format('Precision', pre))
             print("{:.<27s}{:10.4f}".format('Recall (Sensitivity)', tpr))
             print("{:.<27s}{:10.4f}".format('Specificity', tpr0))
@@ -399,6 +413,10 @@ class logreg(object):
                     z.append(0)
                 conf_mat.append(z)
             y_ = np.ravel(y) # necessary because yt is a df with row keys
+            unseen = set(np.unique(y_)) - set(lr.classes_)
+            if unseen:
+                raise ValueError("Target contains classes not in the "+
+                                 "fitted model: "+str(unseen))
             for i in range(n_classes):
                 misc.append(0)
                 n_.append(0)
@@ -446,30 +464,30 @@ class logreg(object):
             print("{:.<27s}{:9.1f}{:s}".format(\
                     'MISC (Misclassification)', misc_, '%'))
             
-            if type(lr.classes_[0]) == str:
+            if isinstance(lr.classes_[0], str):
                 fstr = "{:s}{:.<16s}{:>9.1f}{:<1s}"
             else:
                 fstr = "{:s}{:.<16.0f}{:>9.1f}{:<1s}"
             for i in range(n_classes):
-                misc[i] = 100*misc[i]/n_[i]
+                misc[i] = 100*misc[i]/n_[i] if n_[i] > 0 else float('nan')
                 print(fstr.format(\
                       '     class ', lr.classes_[i], misc[i], '%'))
             print("\n\n     Confusion")
             print("       Matrix    ", end="")
             
             fstr1 = "{:>7s}{:<3.0f}"
-            if type(lr.classes_[0]) == str:
+            if isinstance(lr.classes_[0], str):
                 fstr2 = "{:.<15s}"
             else:
                 fstr2 = "{:s}{:.<6.0f}"
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ', lr.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr2.format(str(i)+" "+lr.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', lr.classes_[i]), end="")
@@ -487,7 +505,7 @@ class logreg(object):
         if len(lr.classes_) == 2:
             yt_= np.ravel(yt)
             yv_= np.ravel(yv)
-            if type(yt_[0])==str:
+            if isinstance(yt_[0], str):
                 classes_ = lr.classes_
             else:
                 classes_ = [str(int(lr.classes_[0])), str(int(lr.classes_[1]))]
@@ -495,17 +513,23 @@ class logreg(object):
             zv = np.zeros(len(yv_))
             #zt = deepcopy(yt)
             for i in range(len(yt)):
-                if yt_[i] == 1:
+                if yt_[i] == lr.classes_[1]:
                     zt[i] = 1
             for i in range(len(yv)):
-                if yv_[i] == 1:
+                if yv_[i] == lr.classes_[1]:
                     zv[i] = 1
             predict_t = lr.predict(Xt)
             predict_v = lr.predict(Xv)
-            conf_matt = confusion_matrix(y_true=yt_, y_pred=predict_t)
-            conf_matv = confusion_matrix(y_true=yv_, y_pred=predict_v)
-            prob_t = lr._predict_proba_lr(Xt)
-            prob_v = lr._predict_proba_lr(Xv)
+            conf_matt = confusion_matrix(y_true=yt_, y_pred=predict_t,
+                                         labels=lr.classes_)
+            conf_matv = confusion_matrix(y_true=yv_, y_pred=predict_v,
+                                         labels=lr.classes_)
+            try:
+                prob_t = lr.predict_proba(Xt)
+                prob_v = lr.predict_proba(Xv)
+            except:
+                prob_t = lr._predict_proba_lr(Xt)
+                prob_v = lr._predict_proba_lr(Xv)
             #prob_t = lr.predict_proba(Xt)
             #prob_v = lr.predict_proba(Xv)
             print("\n")
@@ -530,7 +554,7 @@ class logreg(object):
             acct = accuracy_score(yt_, predict_t)
             accv = accuracy_score(yv_, predict_v)
             print("{:.<23s}{:15.4f}{:15.4f}".format('Accuracy', acct, accv))
-            if type(yt_[0])==str:
+            if isinstance(yt_[0], str):
                 pre_t  = precision_score(yt, predict_t, pos_label=classes_[1])
                 tpr_t  = recall_score(yt, predict_t, pos_label=classes_[1])
                 f1_t   = f1_score(yt,predict_t, pos_label=classes_[1])
@@ -540,14 +564,15 @@ class logreg(object):
                 tpr0_v = recall_score(yv, predict_v, pos_label=classes_[0])
                 tpr0_t  = recall_score(yt, predict_t, pos_label=classes_[0])
             else:
-                pre_t = precision_score(yt, predict_t)
-                tpr_t = recall_score(yt, predict_t)
-                f1_t  = f1_score(yt,predict_t)
-                pre_v = precision_score(yv, predict_v)
-                tpr_v = recall_score(yv, predict_v)
-                f1_v  = f1_score(yv,predict_v)
-                tpr0_v = recall_score(yv, predict_v, pos_label=0)
-                tpr0_t = recall_score(yt, predict_t, pos_label=0)
+                pos, neg = lr.classes_[1], lr.classes_[0]
+                pre_t = precision_score(yt, predict_t, pos_label=pos)
+                tpr_t = recall_score(yt, predict_t, pos_label=pos)
+                f1_t  = f1_score(yt,predict_t, pos_label=pos)
+                pre_v = precision_score(yv, predict_v, pos_label=pos)
+                tpr_v = recall_score(yv, predict_v, pos_label=pos)
+                f1_v  = f1_score(yv,predict_v, pos_label=pos)
+                tpr0_v = recall_score(yv, predict_v, pos_label=neg)
+                tpr0_t = recall_score(yt, predict_t, pos_label=neg)
                 
             print("{:.<27s}{:11.4f}{:15.4f}".format('Precision', pre_t, pre_v))
             print("{:.<27s}{:11.4f}{:15.4f}".format('Recall (Sensitivity)', 
@@ -608,10 +633,16 @@ class logreg(object):
                 sys.exit()
             predict_t = lr.predict(Xt)
             predict_v = lr.predict(Xv)
-            prob_t = lr._predict_proba_lr(Xt)
-            prob_v = lr._predict_proba_lr(Xv)
-            conf_mat_t = confusion_matrix(y_true=yt, y_pred=predict_t)
-            conf_mat_v = confusion_matrix(y_true=yv, y_pred=predict_v)
+            try:
+                prob_t = lr.predict_proba(Xt)
+                prob_v = lr.predict_proba(Xv)
+            except:
+                prob_t = lr._predict_proba_lr(Xt)
+                prob_v = lr._predict_proba_lr(Xv)
+            conf_mat_t = confusion_matrix(y_true=yt, y_pred=predict_t,
+                                          labels=lr.classes_)
+            conf_mat_v = confusion_matrix(y_true=yv, y_pred=predict_v,
+                                          labels=lr.classes_)
             #prob_t = lr.predict_proba(Xt)
             #prob_v = lr.predict_proba(Xv)
             ase_sumt  = 0
@@ -633,6 +664,11 @@ class logreg(object):
                 conf_matv.append(np.zeros(n_classes))
             y_t = np.ravel(yt) # necessary because yt is a df with row keys
             y_v = np.ravel(yv) # likewise
+            unseen = (set(np.unique(y_t)) | set(np.unique(y_v))) - \
+                     set(lr.classes_)
+            if unseen:
+                raise ValueError("Target contains classes not in the "+
+                                 "fitted model: "+str(unseen))
             for i in range(n_classes):
                 misct.append(0)
                 n_t.append(0)
@@ -696,7 +732,7 @@ class logreg(object):
             print("{:.<27s}{:10d}{:11d}".format('Coefficients', \
                                               n_coef, n_coef))
             print("{:.<27s}{:10d}{:11d}".format('DF Error', \
-                          Xt.shape[0]-n_coef, Xt.shape[0]-n_coef))
+                          Xt.shape[0]-n_coef, Xv.shape[0]-n_coef))
             print("{:.<27s}{:10d}{:11d}".format('Iterations', \
                                   lr.n_iter_.max(), lr.n_iter_.max()))
             
@@ -726,32 +762,32 @@ class logreg(object):
 
             fstr0="{:s}{:.<16s}{:>9.1f}{:<1s}{:>10.1f}{:<1s}"
             fstr1 = "{:>7s}{:<3.0f}"
-            if type(lr.classes_[0]) == str:
+            if isinstance(lr.classes_[0], str):
                 fstr2 = "{:.<15s}"
             else:
                 fstr2 = "{:s}{:.<6.0f}"
             classes_ = []
-            if type(lr.classes_[0])==str:
+            if isinstance(lr.classes_[0], str):
                 classes_ = lr.classes_
             else:
                 for i in range(n_classes):
                     classes_.append(str(int(lr.classes_[i])))
             for i in range(n_classes):
-                misct[i] = 100*misct[i]/n_t[i]
-                miscv[i] = 100*miscv[i]/n_v[i]
+                misct[i] = 100*misct[i]/n_t[i] if n_t[i] > 0 else float('nan')
+                miscv[i] = 100*miscv[i]/n_v[i] if n_v[i] > 0 else float('nan')
                 print(fstr0.format(\
                       '     class ', classes_[i], misct[i], '%', miscv[i], '%'))
     
             print("\n\nTraining")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ',  lr.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr2.format(str(i)+" "+ lr.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', lr.classes_[i]), end="")
@@ -761,19 +797,20 @@ class logreg(object):
                 print("")
             print("")
                 
-            ct = classification_report(yt, predict_t, labels=target_names)
+            ct = classification_report(yt, predict_t, labels=lr.classes_,
+                                       target_names=target_names)
             print("\nTraining \nMetrics:\n",ct)
             
             print("\n\nValidation")
             print("Confusion Matrix ", end="")
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr1.format('Class ', i), end="")
                 else:
                     print(fstr1.format('Class ',  lr.classes_[i]), end="")
             print("")
             for i in range(n_classes):
-                if type(lr.classes_[0]) == str:
+                if isinstance(lr.classes_[0], str):
                     print(fstr2.format(str(i)+" "+ lr.classes_[i]), end="")
                 else:
                     print(fstr2.format('Class ', lr.classes_[i]), end="")
@@ -782,7 +819,8 @@ class logreg(object):
                     print("{:>10d}".format(conf_mat_v[i][j]), end="")
                 print("")
             print("")
-            cv = classification_report(yv, predict_v, labels=target_names)
+            cv = classification_report(yv, predict_v, labels=lr.classes_,
+                                       target_names=target_names)
             print("\nValidation \nMetrics:\n",cv)
     
      
@@ -835,7 +873,8 @@ class stepwise(object):
                                    "***   crit_in is invalid.")
                 sys.exit()
         else:
-            if type(crit_in)!=float:
+            if isinstance(crit_in, bool) or \
+               not isinstance(crit_in, (int, float, np.integer)):
                 raise RuntimeError("***Call to stepwise invalid. "+\
                                    "***   crit_in is invalid.")
                 sys.exit()
@@ -850,7 +889,8 @@ class stepwise(object):
                                    "***   crit_out is invalid.")
                 sys.exit()
         else:
-            if type(crit_out)!=float:
+            if isinstance(crit_out, bool) or \
+               not isinstance(crit_out, (int, float, np.integer)):
                 raise RuntimeError("***Call to stepwise invalid. "+\
                                    "***   crit_out is invalid.")
                 sys.exit()
@@ -868,6 +908,15 @@ class stepwise(object):
             self.df_copy = deepcopy(df)
         else:
             self.df_copy = df
+        if reg=='logistic':
+            # sm.Logit requires a 0/1 target; the last sorted class is 1,
+            # matching sklearn's classes_[1]
+            levels = sorted(self.df_copy[yname].unique())
+            if not set(levels) <= {0, 1}:
+                if deep != True:
+                    self.df_copy = df.copy()
+                self.df_copy[yname] = \
+                    (self.df_copy[yname] == levels[1]).astype(int)
         
         # string - column name in df for y
         self.yname     = yname
@@ -891,9 +940,13 @@ class stepwise(object):
             self.crit_out  = crit_out # float
         # [] of string = list of column names in df forced into model
         if type(x_force)!= type(None):
-            self.x_force = x_force   # list of strings (col names)
+            self.x_force = list(x_force)   # list of strings (col names)
         else:
             self.x_force = []
+        self.xnames = list(self.xnames)
+        for c in self.x_force:
+            if c not in self.xnames:
+                self.xnames.append(c)
         # True or False, control display of steps selected
         self.verbose = verbose
         # initialized list of selected columns in df
@@ -906,8 +959,7 @@ class stepwise(object):
         Linear Regression Stepwise Selection  
         Author: Mahitha RAJENDRAN THANGADURAI
         """ 
-        initial_list = []
-        included = initial_list
+        included = list(self.x_force)
         if self.crit_out<self.crit_in:
             raise RuntimeError("\n***Call to stepwise invalid: "+ \
                 "crit_out smaller than crit_in.")
@@ -949,7 +1001,8 @@ class stepwise(object):
                 Xc      = sm.add_constant(pd.DataFrame(X[included]))
                 model   = sm.Logit(y, Xc)
                 results = model.fit(disp=False)
-            pvalues = results.pvalues.iloc[1:]
+            pvalues = results.pvalues.drop(['const'] + self.x_force,
+                                           errors='ignore')
             worst_pval = pvalues.max()
             if worst_pval > self.crit_out:
                 worst_feature = pvalues.idxmax()
@@ -968,8 +1021,7 @@ class stepwise(object):
         Linear Regression Forward Stepwise Selection
         Author: SHAOFANG
         """  
-        initial_list = []
-        included = list(initial_list)
+        included = list(self.x_force)
         X = self.df_copy[self.xnames]
         y = self.df_copy[self.yname]
         warnings.filterwarnings("once", category=UserWarning)
@@ -1026,6 +1078,7 @@ class stepwise(object):
                 
             for new_column in included:
                 new_pval[new_column] = model.pvalues.loc[new_column]
+            new_pval = new_pval.drop(self.x_force, errors='ignore')
             worst_pval = new_pval.max()
             if worst_pval > self.crit_out:
                 worst_feature = new_pval.idxmax()
